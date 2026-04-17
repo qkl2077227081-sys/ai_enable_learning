@@ -1,11 +1,15 @@
 package com.kl_v.exam.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.Banner;
+import com.kl_v.exam.service.BannerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,7 +23,10 @@ import java.util.List;
 @RequestMapping("/api/banners")  // 轮播图API路径前缀
 @CrossOrigin  // 允许跨域访问
 @Tag(name = "轮播图管理", description = "轮播图相关操作，包括图片上传、轮播图增删改查、状态管理等功能")  // Swagger API分组
+@Slf4j
 public class BannerController {
+    @Autowired
+    private BannerService bannerService;
 
     
     /**
@@ -43,7 +50,16 @@ public class BannerController {
     @GetMapping("/active")  // 处理GET请求
     @Operation(summary = "获取启用的轮播图", description = "获取状态为启用的轮播图列表，供前台首页展示使用")  // API描述
     public Result<List<Banner>> getActiveBanners() {
-        return Result.success(null);
+        //1.创建LambdaWrapper
+        LambdaQueryWrapper<Banner> queryWrapper = new LambdaQueryWrapper<>();
+        //激活状态
+        queryWrapper.eq(Banner::getIsActive,true);
+        //排序 正序
+        queryWrapper.orderByAsc(Banner::getSortOrder);
+        //执行查询
+        List<Banner> bannerList = bannerService.list(queryWrapper);
+        log.info("查询前台需要激活的轮播图信息成功！结果为：{}",bannerList);
+        return Result.success(bannerList,"查询激活状态banner信息成功");
     }
     
     /**
@@ -53,7 +69,14 @@ public class BannerController {
     @GetMapping("/list")  // 处理GET请求
     @Operation(summary = "获取所有轮播图", description = "获取所有轮播图列表，包括启用和禁用的，供管理后台使用")  // API描述
     public Result<List<Banner>> getAllBanners() {
-        return Result.success(null);
+        //拼接条件，进行排序
+        LambdaQueryWrapper<Banner> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.orderByAsc(Banner::getSortOrder);//根据sort正序排序
+        //查询所有符合集合
+        List<Banner> bannerList = bannerService.list(lambdaQueryWrapper);
+        //进行结果拼接
+        log.info("查询所有后台需要的轮播图信息成功！结果为：{}",bannerList);
+        return Result.success(bannerList,"查询轮播图信息成功");
     }
     
     /**
