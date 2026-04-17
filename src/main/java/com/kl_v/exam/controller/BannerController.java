@@ -2,6 +2,7 @@ package com.kl_v.exam.controller;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.Banner;
 import com.kl_v.exam.service.BannerService;
@@ -135,6 +136,18 @@ public class BannerController {
     public Result<String> toggleBannerStatus(
             @Parameter(description = "轮播图ID") @PathVariable Long id, 
             @Parameter(description = "是否启用，true为启用，false为禁用") @RequestParam Boolean isActive) {
-        return null;
+        //创建updateWrapper
+        LambdaUpdateWrapper<Banner> lambdaUpdateWrapper = new LambdaUpdateWrapper<>();
+        //设置修改条件
+        lambdaUpdateWrapper.eq(Banner::getId,id);
+        //设置修改的值isActive = x
+        lambdaUpdateWrapper.set(Banner::getIsActive,isActive);
+        boolean update = bannerService.update(lambdaUpdateWrapper);
+        if (update) {
+            log.info("轮播图状态修改成功，修改后的状态为:{}",isActive);
+            return Result.success("轮播图的激活状态修改成功");
+        }
+        log.info("轮播图状态修改失败,原计划的目标状态为:{}",isActive);
+        return Result.error("轮播图状态修改失败");
     }
 } 
