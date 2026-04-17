@@ -88,8 +88,15 @@ public class BannerController {
     @GetMapping("/{id}")  // 处理GET请求
     @Operation(summary = "根据ID获取轮播图", description = "根据轮播图ID获取单个轮播图的详细信息")  // API描述  
     public Result<Banner> getBannerById(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-
-      return Result.error("轮播图不存在");
+        //根据id查询即可
+        Banner banner = bannerService.getById(id);
+        //进行结果拼接
+        if (banner!=null) {
+            log.info("轮播图详情查询成功！查询结果为：{}",banner);
+            return Result.success(banner,"轮播图详细查询成功");
+        }
+        log.info("轮播图详情查询失败！没有查询到指定id：{}的轮播图信息",id);
+        return Result.error("轮播图详细查询失败");
     }
     
     /**
