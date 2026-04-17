@@ -122,7 +122,14 @@ public class BannerController {
     @DeleteMapping("/delete/{id}")  // 处理DELETE请求
     @Operation(summary = "删除轮播图", description = "根据ID删除指定的轮播图")  // API描述
     public Result<String> deleteBanner(@Parameter(description = "轮播图ID") @PathVariable Long id) {
-        return null;
+        //直接删除
+        boolean removed = bannerService.removeById(id);
+        if (removed) {
+            log.info("删除轮播图数据成功！删除id为：{}",id);
+            return Result.success("轮播图数据删除成功");
+        }
+        log.info("删除轮播图数据失败！计划要删除id为：{}",id);
+        return Result.error("轮播图删除失败");
     }
     
     /**
