@@ -1,7 +1,12 @@
 server:
   port: 8080 #要与前端request.js对应
 
+
 spring:
+  servlet:
+    multipart:
+      max-request-size: 150MB
+      max-file-size: 100MB
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -23,3 +28,10 @@ spring:
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+#minio的配置
+minio:
+  endpoint: http://192.168.6.100:9000
+  username: minioadmin
+  password: minioadmin
+  bucket-name: enen
