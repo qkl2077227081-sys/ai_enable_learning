@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Date;
+
 /**
  * 轮播图服务实现类
  */
@@ -32,5 +34,44 @@ public class BannerServiceImpl extends ServiceImpl<BannerMapper, Banner> impleme
         //返回地址
 
         return url;
+    }
+
+    @Override
+    public void addBanner(Banner banner) throws Exception {
+        //1.检查默认值 isActive = true sortOrder = 1
+        if(banner.getIsActive() == null){
+            banner.setIsActive(Boolean.TRUE);
+        }
+        if (banner.getSortOrder() == null) {
+            banner.setSortOrder(5);
+        }
+        //2.createTime updateTime isDeleted前端一定不传值
+//        banner.setCreateTime(new Date());
+//        banner.setUpdateTime(new Date());
+//        banner.setIsDeleted((byte) 0);
+        //3.继续保存banner
+        boolean saved = save(banner);
+        if (!saved){
+            throw new Exception("轮播图数据保存失败！！");
+        }
+
+
+    }
+
+    @Override
+    public void updateBanner(Banner banner) {
+        //1.检查默认值 isActive = true sortOrder = 1
+        if(banner.getIsActive() == null){
+            banner.setIsActive(Boolean.TRUE);
+        }
+        if (banner.getSortOrder() == null) {
+            banner.setSortOrder(5);
+        }
+
+        //2.调用修改即可
+        boolean updated = updateById(banner);
+        if(!updated){
+            throw new RuntimeException("轮播图修改失败");
+        }
     }
 }

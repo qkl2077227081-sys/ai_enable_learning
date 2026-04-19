@@ -110,8 +110,10 @@ public class BannerController {
      */
     @PostMapping("/add")  // 处理POST请求
     @Operation(summary = "添加轮播图", description = "创建新的轮播图，需要提供图片URL、标题、跳转链接等信息")  // API描述
-    public Result<String> addBanner(@RequestBody Banner banner) {
-        return null;
+    public Result<String> addBanner(@RequestBody Banner banner) throws Exception {
+        bannerService.addBanner(banner);
+        log.info("轮播图保存数据业务调用成功！");
+        return Result.success("轮播图数据保存成功");
     }
     
     /**
@@ -122,7 +124,9 @@ public class BannerController {
     @PutMapping("/update")  // 处理PUT请求
     @Operation(summary = "更新轮播图", description = "更新轮播图的信息，包括图片、标题、跳转链接、排序等")  // API描述
     public Result<String> updateBanner(@RequestBody Banner banner) {
-        return null;
+        bannerService.updateBanner(banner);
+        log.info("轮播图数据修改业务成功！！");
+        return Result.success("轮播图修改成功！！");
     }
     
     /**

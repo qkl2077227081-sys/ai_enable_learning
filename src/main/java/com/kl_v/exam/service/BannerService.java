@@ -15,4 +15,17 @@ public interface BannerService extends IService<Banner> {
      * @return 回显的地址，失败就抛异常
      */
     String uploadBannerImage(MultipartFile file) throws Exception;
+
+    /**
+     * 保存轮播图信息
+     * @param banner 轮播图信息对象
+     */
+    void addBanner(Banner banner) throws Exception;
+
+    /**
+     * 修改轮播图信息
+     * @param banner
+     */
+    void updateBanner(Banner banner);
+
 }
