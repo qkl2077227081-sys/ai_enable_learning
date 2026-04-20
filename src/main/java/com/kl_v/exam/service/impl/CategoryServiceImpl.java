@@ -76,6 +76,24 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper,Category> im
         save(category);
     }
 
+    @Override
+    public void updateCategory(Category category) {
+        //判断同一个父类分类下不允许重名
+        LambdaQueryWrapper<Category> lambdaQueryWrapper = new LambdaQueryWrapper();
+        lambdaQueryWrapper.eq(Category::getParentId,category.getParentId());
+        lambdaQueryWrapper.ne(Category::getId,category.getId());
+        lambdaQueryWrapper.eq(Category::getName,category.getName());
+        CategoryMapper categoryMapper = getBaseMapper();
+        boolean exists = categoryMapper.exists(lambdaQueryWrapper);
+        if (exists) {
+            Category parent = getById(category.getParentId());
+            //不能添加，同一个父类下名称重复了
+            throw new RuntimeException("在%s父类下，已经存在名为%s子分类，本次更新失败".formatted(parent.getName(),category.getName()));
+        }
+        //更新
+        updateById(category);
+    }
+
     /**
      * 给予分类信息进行count填充
      * 1.判断分类集合是否为empty【对一个集合，对一个数据进行大量逻辑代码之前，尽量先判断，否则出现无用功】

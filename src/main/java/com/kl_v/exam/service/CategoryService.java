@@ -24,4 +24,10 @@ public interface CategoryService extends IService<Category> {
      * @param category
      */
     void savaCategory(Category category);
+
+    /**
+     * 更新分类
+     * @param category
+     */
+    void updateCategory(Category category);
 }
