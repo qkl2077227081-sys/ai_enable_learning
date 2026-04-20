@@ -86,6 +86,8 @@ public class CategoryController {
     @Operation(summary = "删除分类", description = "删除指定的题目分类，注意：删除前需确保分类下没有题目")  // API描述
     public Result<Void> deleteCategory(
             @Parameter(description = "分类ID") @PathVariable Long id) {
-        return Result.success(null);
+        categoryService.removeCategoryById(id);
+        log.info("删除id：{}的分类数据成功",id);
+        return Result.success("删除分类接口调用成功");
     }
 } 

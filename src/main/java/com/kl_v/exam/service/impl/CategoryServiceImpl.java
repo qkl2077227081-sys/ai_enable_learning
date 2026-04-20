@@ -4,6 +4,7 @@ package com.kl_v.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.entity.Category;
+import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.mapper.CategoryMapper;
 import com.kl_v.exam.mapper.QuestionMapper;
 import com.kl_v.exam.service.CategoryService;
@@ -95,6 +96,24 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper,Category> im
         }
         //更新
         updateById(category);
+    }
+
+    @Override
+    public void removeCategoryById(Long id) {
+        //1.检查是否一级标题
+        Category category = getById(id);
+        if(category.getParentId() ==0){
+            throw new RuntimeException("不能删除一级标题");
+        }
+        //2.检查是否存在关联题目
+        LambdaQueryWrapper<Question> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Question::getCategoryId,id);
+        Long count = questionMapper.selectCount(lambdaQueryWrapper);
+        if (count>0) {
+            throw new RuntimeException("当前的：%s分类，关联了%s道题目，无法删除！！".formatted(category.getName(),count));
+        }
+        //3.以上都不满足删除即可
+        removeById(id);
     }
 
     /**
