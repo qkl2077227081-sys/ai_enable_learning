@@ -49,10 +49,10 @@ public class Kinfe4jConfiguration {
     @Bean
     public GroupedOpenApi questionAPI(){
         return GroupedOpenApi.builder()
-                .group("试题信息管理（试题类别和内容）")
+                .group("试题信息管理")
                 .pathsToMatch(
                         "/api/categories/**",
-                        "/api/question/**"
+                        "/api/questions/**"
                 ).build();
     }
     //考试信息管理（试卷，考试和考试记录）

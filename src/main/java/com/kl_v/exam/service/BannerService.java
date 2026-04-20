@@ -26,6 +26,6 @@ public interface BannerService extends IService<Banner> {
      * 修改轮播图信息
      * @param banner
      */
-    void updateBanner(Banner banner);
+    void updateBanner(Banner banner) throws Exception;
 
 }

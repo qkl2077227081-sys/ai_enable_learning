@@ -2,9 +2,13 @@ package com.kl_v.exam.controller;
 
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.Category;
+import com.kl_v.exam.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,10 +17,14 @@ import java.util.List;
  * 分类控制器 - 处理题目分类管理相关的HTTP请求
  * 包括分类的增删改查、树形结构展示等功能
  */
+@Slf4j
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/categories")  // 分类API路径前缀
 @Tag(name = "分类管理", description = "题目分类相关操作，包括分类的增删改查、树形结构管理等功能")  // Swagger API分组
+@CrossOrigin
 public class CategoryController {
+    @Autowired
+    private CategoryService categoryService;
 
 
     /**
@@ -26,7 +34,9 @@ public class CategoryController {
     @GetMapping  // 处理GET请求
     @Operation(summary = "获取分类列表", description = "获取所有题目分类列表，包含每个分类下的题目数量统计")  // API描述
     public Result<List<Category>> getCategories() {
-        return Result.success(null);
+        List<Category> categoryList = categoryService.getCategoryList();
+        log.info("查询分类列表和题目数量业务信息成功！结果为：{}",categoryList);
+        return Result.success(categoryList);
     }
 
     /**
@@ -36,7 +46,9 @@ public class CategoryController {
     @GetMapping("/tree")  // 处理GET请求
     @Operation(summary = "获取分类树形结构", description = "获取题目分类的树形层级结构，用于前端树形组件展示")  // API描述
     public Result<List<Category>> getCategoryTree() {
-        return Result.success(null);
+       List<Category> categoryList = categoryService.getCategoryTreeList();
+       log.info("查询树状分类集合接口调用成功，{}",categoryList);
+        return Result.success(categoryList);
     }
 
     /**
@@ -47,7 +59,9 @@ public class CategoryController {
     @PostMapping  // 处理POST请求
     @Operation(summary = "添加新分类", description = "创建新的题目分类，支持设置父分类实现层级结构")  // API描述
     public Result<Void> addCategory(@RequestBody Category category) {
-        return Result.success(null);
+        categoryService.savaCategory(category);
+        log.info("在{}父分类下，新增子分类{}成功",category.getParentId(),category.getName());
+        return Result.success("新增分类成功");
     }
 
     /**

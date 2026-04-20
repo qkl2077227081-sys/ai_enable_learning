@@ -27,6 +27,7 @@ spring:
 #用于打印框架生成的sql语句便于测试
 mybatis-plus:
   configuration:
+    map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 #minio的配置
