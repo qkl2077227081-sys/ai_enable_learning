@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,8 +24,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper,Category> im
 
     @Autowired
     private QuestionMapper questionMapper;
-//    @Autowired
-//    private CategoryMapper categoryMapper;
+
 
 
     @Override
@@ -51,6 +51,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper,Category> im
         categoriyListResult.forEach(category -> {
             //赋值子分类
             List<Category> childCategoryList = parentIdMap.getOrDefault(category.getId(), new ArrayList<>());
+            //排序
+//            childCategoryList.sort((o1, o2) -> o1.getSort()-o2.getSort());
+            childCategoryList.sort(Comparator.comparingInt(Category::getSort));
             category.setChildren(childCategoryList);
             //赋值count = 当前count + 子分类count
             long childCount = childCategoryList.stream().mapToLong(Category::getCount).sum();
