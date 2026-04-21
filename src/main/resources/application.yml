@@ -29,6 +29,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    auto-mapping-behavior: full #开启嵌套式映射
 
 #minio的配置
 minio:

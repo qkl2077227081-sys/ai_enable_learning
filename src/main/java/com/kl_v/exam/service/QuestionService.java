@@ -1,7 +1,9 @@
 package com.kl_v.exam.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.Question;
+import com.kl_v.exam.vo.QuestionPageVo;
 
 /**
  * 题目业务服务接口 - 定义题目相关的业务逻辑
@@ -29,4 +31,18 @@ import com.kl_v.exam.entity.Question;
 public interface QuestionService extends IService<Question> {
 
 
-} 
+    /**
+     * 废弃
+     * 分页查询题目数据
+     * @param pageBean
+     * @param questionPageVo
+     */
+    void customPageService(Page<Question> pageBean, QuestionPageVo questionPageVo);
+
+    /**
+     * Java代码进行数据的拼装1+n-》1+1+1
+     * @param pageBean
+     * @param questionPageVo
+     */
+    void customPageJavaService(Page<Question> pageBean, QuestionPageVo questionPageVo);
+}

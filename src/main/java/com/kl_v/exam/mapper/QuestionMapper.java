@@ -2,7 +2,10 @@ package com.kl_v.exam.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.kl_v.exam.entity.Question;
+import com.kl_v.exam.vo.QuestionPageVo;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -19,5 +22,13 @@ public interface QuestionMapper extends BaseMapper<Question> {
      */
     @Select("select category_id,count(*) ct from questions where is_deleted = 0 GROUP BY category_id")
     List<Map<Long,Long>> selectCategoryCount();
+
+    /**
+     * 分页查询题目信息
+     * @param page 分页对象
+//     * @param questionPageVo 自己实体类
+     * @return
+     */
+    IPage<Question> customPage(IPage page, @Param("queryVo") QuestionPageVo queryVo);
 
 } 
