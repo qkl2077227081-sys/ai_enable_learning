@@ -3,6 +3,7 @@ package com.kl_v.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kl_v.exam.common.CacheConstants;
 import com.kl_v.exam.entity.Question;
 
 import com.kl_v.exam.entity.QuestionAnswer;
@@ -11,6 +12,7 @@ import com.kl_v.exam.mapper.QuestionAnswerMapper;
 import com.kl_v.exam.mapper.QuestionChoiceMapper;
 import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.mapper.QuestionMapper;
+import com.kl_v.exam.utils.RedisUtils;
 import com.kl_v.exam.vo.QuestionPageVo;
 
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +39,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     private QuestionChoiceMapper questionChoiceMapper;
     @Autowired
     private QuestionAnswerMapper questionAnswerMapper;
+    @Autowired
+    private RedisUtils redisUtils;
 
     @Override
     public void customPageService(Page<Question> pageBean, QuestionPageVo questionPageVo) {
@@ -55,6 +59,27 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
 
         //2.提取一个方法，给题目进行选项和答案装填
         fillQuestionChoiceAndAnswer(pageBean.getRecords());
+    }
+
+    @Override
+    public Question customDetailQuestion(Long id) {
+        //1.查询题目详情
+        Question question = questionMapper.customGetById(id);
+        if (question == null){
+            throw  new RuntimeException("题目查询详情失败！原因可能提前被删除！题目id为：" + id);
+        }
+        //2.进行热点题目缓存
+        new Thread(() -> {
+            incrementQuestion(question.getId());
+        }).start();
+        return question;
+    }
+
+    //定义进行题目访问次数增长的方法
+    //异步方法
+    private void incrementQuestion(Long questionId){
+        Double score = redisUtils.zIncrementScore(CacheConstants.POPULAR_QUESTIONS_KEY,questionId,1);
+        log.info("完成{}题目分数累计，累计后分数为：{}",questionId,score);
     }
 
     private void fillQuestionChoiceAndAnswer(List<Question> questionList) {

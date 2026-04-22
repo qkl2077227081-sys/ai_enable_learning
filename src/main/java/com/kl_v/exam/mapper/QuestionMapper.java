@@ -31,4 +31,6 @@ public interface QuestionMapper extends BaseMapper<Question> {
      */
     IPage<Question> customPage(IPage page, @Param("queryVo") QuestionPageVo queryVo);
 
-} 
+
+    Question customGetById(Long questionId);
+}
