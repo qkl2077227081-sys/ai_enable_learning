@@ -59,4 +59,11 @@ public interface QuestionService extends IService<Question> {
      */
 
     void customSaveQuestion(Question question);
+
+    /**
+     * 进行题目的修改
+     * @param question
+     */
+
+    void customUpdateQuestion(Question question);
 }

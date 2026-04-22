@@ -127,6 +127,57 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     }
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void customUpdateQuestion(Question question) {
+//        1. 题目的校验 （不同id不运行title重复）
+        LambdaQueryWrapper<Question> QueryWrapper = new LambdaQueryWrapper<>();
+        QueryWrapper.ne(Question::getId,question.getId());
+        QueryWrapper.eq(Question::getTitle,question.getTitle());
+        boolean exists = baseMapper.exists(QueryWrapper);
+        if (exists) {
+            throw new RuntimeException("修改：%s的新标题：%s和其他新标题重复了".formatted(question.getId(),question.getTitle()));
+        }
+//        2. 修改题目
+        boolean updated = updateById(question);
+        if (!updated) {
+            throw new RuntimeException("修改：%s题目失败".formatted(question.getId()));
+        }
+//        3. 获取答案对象
+        QuestionAnswer answer = question.getAnswer();
+//        4. 判断是选择题
+        if ("CHOICE".equals(question.getType())) {
+            List<QuestionChoice> choiceList = question.getChoices();
+            //删除题目对应的所有选项（原）[根据题目id删除]
+            LambdaQueryWrapper<QuestionChoice> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+            lambdaQueryWrapper.eq(QuestionChoice::getQuestionId,question.getId());
+            questionChoiceMapper.delete(lambdaQueryWrapper);
+            //循环新增选项（选项上id == null）
+            //拼接正确的档案 a,b
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < choiceList.size(); i++) {
+                QuestionChoice choice = choiceList.get(i);
+                choice.setId(null);
+                choice.setCreateTime(null);
+                choice.setUpdateTime(null);
+                questionChoiceMapper.insert(choice);
+                if (choice.getIsCorrect()) {
+                    if (sb.length() > 0) {
+                        sb.append(",");
+                    }
+                    sb.append((char) ('A' + i));
+                }
+            }
+            //答案对象赋值选择题答案
+            answer.setAnswer(sb.toString());
+
+        }
+//        5. 进行答案的修改
+        questionAnswerMapper.updateById(answer);
+//        6. 保证一致性，添加事务
+
+    }
+
     //定义进行题目访问次数增长的方法
     //异步方法
     private void incrementQuestion(Long questionId){
