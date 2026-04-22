@@ -16,10 +16,13 @@ import com.kl_v.exam.utils.RedisUtils;
 import com.kl_v.exam.vo.QuestionPageVo;
 
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.asm.Advice;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import javax.management.RuntimeMBeanException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +58,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         lambdaQueryWrapper.eq(!ObjectUtils.isEmpty(questionPageVo.getDifficulty()),Question::getDifficulty,questionPageVo.getDifficulty());
         lambdaQueryWrapper.eq(!ObjectUtils.isEmpty(questionPageVo.getCategoryId()),Question::getCategoryId,questionPageVo.getCategoryId());
         lambdaQueryWrapper.like(!ObjectUtils.isEmpty(questionPageVo.getKeyword()),Question::getTitle,questionPageVo.getKeyword());
+        //根据时间进行倒叙排序
+        lambdaQueryWrapper.orderByDesc(Question::getCreateTime);
         page(pageBean,lambdaQueryWrapper);
 
         //2.提取一个方法，给题目进行选项和答案装填
@@ -73,6 +78,53 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             incrementQuestion(question.getId());
         }).start();
         return question;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void customSaveQuestion(Question question) {
+        //1.一定插入题目信息 （回显题目id）
+        //同一个类下title不能相同
+        LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Question::getType,question.getType());
+        queryWrapper.eq(Question::getTitle,question.getTitle());
+        //自己的业务获取自己的方法
+        boolean exists = baseMapper.exists(queryWrapper);
+        if (exists) {
+            //同一类型title相同
+            throw new RuntimeException("在%s下，存在%s 名称的题目已经存在！无法保存".formatted(question.getTitle(),question.getType()));
+        }
+        boolean saved = save(question);
+        if (!saved) {
+            //同一类型title相同
+            throw new RuntimeException("在%s下，存在%s 名称的题目！无法保存".formatted(question.getTitle(),question.getType()));
+        }
+        //2.获取答案对象，并先配置题目id
+        QuestionAnswer answer = question.getAnswer();
+        answer.setQuestionId(question.getId());
+        //3.判断是不是选择题
+        if("CHOICE".equals(question.getType())){
+        //是 -》 循环 -》 选项 + 题目id -> 保存 -》 判断是不是正确 进行 A,B,C
+        List<QuestionChoice> choices = question.getChoices();
+        StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < choices.size(); i++) {
+                QuestionChoice choice = choices.get(i);
+                choice.setQuestionId(question.getId());
+                questionChoiceMapper.insert(choice);
+                if (choice.getIsCorrect()) {
+                    //true 本次是正确答案
+                    if (sb.length()>0) {
+                        sb.append(",");
+                    }
+                    sb.append((char)('A'+i));
+                }
+            }
+            //进行答案赋值
+            answer.setAnswer(sb.toString());
+        //4.保存答案对象
+            questionAnswerMapper.insert(answer);
+        //5.保证方法的一致性！ 需要添加事务
+    }
     }
 
     //定义进行题目访问次数增长的方法

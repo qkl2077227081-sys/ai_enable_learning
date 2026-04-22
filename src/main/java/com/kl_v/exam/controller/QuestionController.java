@@ -122,8 +122,10 @@ public class QuestionController {
     @PostMapping  // 映射POST请求到/api/questions
     @Operation(summary = "创建新题目", description = "添加新的考试题目，支持选择题、判断题、简答题等多种题型")  // API描述
     public Result<Question> createQuestion(@RequestBody Question question) {
+        questionService.customSaveQuestion(question);
+        log.info("保存题目信息接口调用成功，最终的结果为，{}",question);
 
-        return Result.success(null);
+        return Result.success(question);
     }
     
     /**

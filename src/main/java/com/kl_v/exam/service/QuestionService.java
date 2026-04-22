@@ -52,4 +52,11 @@ public interface QuestionService extends IService<Question> {
      * @return 返回题目详情对象
      */
     Question customDetailQuestion(Long id);
+
+    /**
+     * 进行题目的添加与保存
+     * @param question
+     */
+
+    void customSaveQuestion(Question question);
 }
