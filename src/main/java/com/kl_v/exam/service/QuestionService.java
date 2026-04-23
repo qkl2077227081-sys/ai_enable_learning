@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.vo.QuestionPageVo;
 
+import java.util.List;
+
 /**
  * 题目业务服务接口 - 定义题目相关的业务逻辑
  * 
@@ -66,4 +68,18 @@ public interface QuestionService extends IService<Question> {
      */
 
     void customUpdateQuestion(Question question);
+
+    /**
+     * 删除指定id的题目信息
+     * @param id
+     */
+    void customRemoveQuestionById(Long id);
+
+
+    /**
+     * 查询指定数量的热门题目
+     * @param size 默认6
+     * @return
+     */
+    List<Question> customFindPopularQuestions(Integer size);
 }
