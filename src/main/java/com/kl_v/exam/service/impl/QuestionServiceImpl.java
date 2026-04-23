@@ -112,6 +112,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         StringBuilder sb = new StringBuilder();
             for (int i = 0; i < choices.size(); i++) {
                 QuestionChoice choice = choices.get(i);
+                //确保，正确顺序！否则默认值为零 会产生随机
+                choice.setSort(i);
                 choice.setQuestionId(question.getId());
                 questionChoiceMapper.insert(choice);
                 if (choice.getIsCorrect()) {
@@ -161,6 +163,8 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
             for (int i = 0; i < choiceList.size(); i++) {
                 QuestionChoice choice = choiceList.get(i);
                 choice.setId(null);
+                //确保，正确顺序！否则默认值为零 会产生随机
+                choice.setSort(i);
                 choice.setCreateTime(null);
                 choice.setUpdateTime(null);
                 //新增选项的需要
