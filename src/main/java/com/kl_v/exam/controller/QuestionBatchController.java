@@ -2,6 +2,7 @@ package com.kl_v.exam.controller;
 
 
 import com.kl_v.exam.common.Result;
+import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.utils.ExcelUtil;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
 import com.kl_v.exam.vo.QuestionImportVo;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +30,9 @@ import java.util.List;
 @CrossOrigin(origins = "*")  // 允许跨域访问
 @Tag(name = "题目批量操作", description = "题目批量管理相关操作，包括Excel导入、AI生成题目、批量验证等功能")  // Swagger API分组
 public class QuestionBatchController {
+    @Autowired
+    private QuestionService questionService;
+
     
 
     /**
@@ -57,8 +62,13 @@ public class QuestionBatchController {
     @PostMapping("/preview-excel")  // 处理POST请求
     @Operation(summary = "预览Excel文件内容", description = "解析并预览Excel文件中的题目内容，不会导入到数据库")  // API描述
     public Result<List<QuestionImportVo>> previewExcel(
-            @Parameter(description = "Excel文件，支持.xls和.xlsx格式") @RequestParam("file") MultipartFile file) {
-       return null;
+            @Parameter(description = "Excel文件，支持.xls和.xlsx格式") @RequestParam("file") MultipartFile file) throws IOException {
+//        1. 参数校验 文件不能为null || 文件是xls或者xlsx
+        List<QuestionImportVo> questionImportVoList = questionService.preVirwExcel(file);
+        log.info("预览解析execl接口调用成功！题目数量：{}，数据为：{}",questionImportVoList.size(),questionImportVoList);
+//        2. 调用解析方法
+//        3. 返回结果
+       return Result.success(questionImportVoList);
     }
     
     /**
@@ -95,7 +105,10 @@ public class QuestionBatchController {
     @Operation(summary = "批量导入题目", description = "将题目列表批量导入到数据库，支持Excel解析后的导入或AI生成后的确认导入")  // API描述
     public Result<String> importQuestions(@RequestBody List<QuestionImportVo> questions) {
 
-       return Result.error("批量导入题目失败!" );
+       int successCount = questionService.importBatchQuestions(questions);
+       log.info("批量导入题目接口调用成功一共：{}题目需要导入，成功导入了：{}道题",questions.size(),successCount);
+
+       return Result.success("批量导入题目接口调用成功一共%s题目需要导入，成功导入了%s道题".formatted(questions.size(),successCount));
 
     }
     

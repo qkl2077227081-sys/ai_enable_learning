@@ -3,8 +3,11 @@ package com.kl_v.exam.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.Question;
+import com.kl_v.exam.vo.QuestionImportVo;
 import com.kl_v.exam.vo.QuestionPageVo;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -82,4 +85,18 @@ public interface QuestionService extends IService<Question> {
      * @return
      */
     List<Question> customFindPopularQuestions(Integer size);
+
+    /**
+     * 题目批量数据预览
+     * @param file
+     * @return
+     */
+    List<QuestionImportVo> preVirwExcel(MultipartFile file) throws IOException;
+
+    /**
+     * 进行题目的批量导入
+     * @param questions
+     * @return
+     */
+    int importBatchQuestions(List<QuestionImportVo> questions);
 }

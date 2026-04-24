@@ -14,18 +14,23 @@ import com.kl_v.exam.mapper.QuestionAnswerMapper;
 import com.kl_v.exam.mapper.QuestionChoiceMapper;
 import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.mapper.QuestionMapper;
+import com.kl_v.exam.utils.ExcelUtil;
 import com.kl_v.exam.utils.RedisUtils;
+import com.kl_v.exam.vo.QuestionImportVo;
 import com.kl_v.exam.vo.QuestionPageVo;
 
 import lombok.extern.slf4j.Slf4j;
 import net.bytebuddy.asm.Advice;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.management.RuntimeMBeanException;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -255,6 +260,95 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         fillQuestionChoiceAndAnswer(popularQuestions);
         //7. 返回即可
         return popularQuestions;
+    }
+
+    //预览
+    @Override
+    public List<QuestionImportVo> preVirwExcel(MultipartFile file) throws IOException {
+        //数据校验
+        if(file == null||file.isEmpty()){
+            throw new RuntimeException("预览数据的文件为空！");
+        }
+        String filename = file.getOriginalFilename();
+        //xls xlsx
+        if (!filename.endsWith(".xls")&&!filename.endsWith(".xlsx")) {
+            throw new RuntimeException("预览数据的文件格式错误！必须是.xls");
+        }
+        //解析数据
+        List<QuestionImportVo> questionImportVoList = ExcelUtil.parseExcel(file);
+
+        //返回结果
+
+        return questionImportVoList;
+    }
+
+    /**
+     * 进行题目的批量导入
+     *
+     * @param questions
+     * @return
+     */
+    @Override
+    public int importBatchQuestions(List<QuestionImportVo> questions) {
+        //进行数据校验
+        if(questions == null || questions.isEmpty()){
+            throw new RuntimeException("导入的题目为空！");
+
+        }
+        //循环+try 调用保存的这个方法【部分成功】
+        int successCount = 0;
+        for (int i = 0; i < questions.size(); i++) {
+            try {
+                //进行vo-question【提取一个方法】
+                //保存数据单条的保存
+                Question question = converQuestionImportVoQuestion(questions.get(i));
+                //正确技术统计
+                customSaveQuestion(question);
+                successCount++;
+            }catch (Exception e){
+                //导入失败的提示
+                log.debug("{}题目导入失败",questions.get(i).getTitle());
+            }
+        }
+
+
+        return successCount;
+    }
+
+    private Question converQuestionImportVoQuestion(QuestionImportVo questionImportVo) {
+        //给question本体属性赋值
+        Question question = new Question();
+        /**
+         * 作用：给对象的属性进行赋值，根据另一个对象的相同属性值
+         * 参数一：source 【提供值】
+         * 参数二：target 【接受值】
+         */
+        BeanUtils.copyProperties(questionImportVo,question);
+        //判断是集合，给选项集合进行赋值
+        if("CHOICE".equals(questionImportVo.getType())){
+            if (questionImportVo.getChoices().size()>0) {
+                List<QuestionChoice> questionChoices = new ArrayList<>(questionImportVo.getChoices().size());
+                for (QuestionImportVo.ChoiceImportDto importVoChoice : questionImportVo.getChoices()) {
+                    QuestionChoice questionChoice = new QuestionChoice();
+                    questionChoice.setContent(importVoChoice.getContent());
+                    questionChoice.setIsCorrect(importVoChoice.getIsCorrect());
+                    questionChoice.setSort(importVoChoice.getSort());
+                }
+                question.setChoices(questionChoices);
+
+            }
+
+        }
+        //不管是不是集合创建答案并赋值
+        QuestionAnswer questionAnswer = new QuestionAnswer();
+        //判断题需要将答案转成大写
+        if("JUDGE".equals(questionImportVo.getAnswer())){
+            questionAnswer.setAnswer(questionImportVo.getAnswer().toUpperCase());
+        }
+        questionAnswer.setKeywords(questionImportVo.getKeywords());
+        question.setAnswer(questionAnswer);
+
+        return question;
     }
 
     //定义进行题目访问次数增长的方法
