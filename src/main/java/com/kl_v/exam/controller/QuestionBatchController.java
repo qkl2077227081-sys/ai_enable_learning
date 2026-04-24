@@ -2,17 +2,20 @@ package com.kl_v.exam.controller;
 
 
 import com.kl_v.exam.common.Result;
+import com.kl_v.exam.utils.ExcelUtil;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
 import com.kl_v.exam.vo.QuestionImportVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -33,8 +36,17 @@ public class QuestionBatchController {
      */
     @GetMapping("/template")  // 处理GET请求
     @Operation(summary = "下载Excel导入模板", description = "下载题目批量导入的Excel模板文件")  // API描述
-    public ResponseEntity<byte[]> downloadTemplate() {
-      return null;
+    public ResponseEntity<byte[]> downloadTemplate() throws IOException {
+        //1.获取下载模板的字节数组
+        byte[] template = ExcelUtil.generateTemplate();
+
+        //2.封装ResponseEntity
+        ResponseEntity<byte[]> responseEntity = ResponseEntity.ok()
+                .header("Content-Disposition","attachment;filename=question_import_template.xlsx")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(template);//二进制文件，不确定类型
+
+      return responseEntity;
     }
     
     /**
