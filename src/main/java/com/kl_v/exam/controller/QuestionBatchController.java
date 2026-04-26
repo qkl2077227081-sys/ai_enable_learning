@@ -81,7 +81,7 @@ public class QuestionBatchController {
     @Operation(summary = "从Excel文件批量导入题目", description = "解析Excel文件并将题目批量导入到数据库")  // API描述
     public Result<String> importFromExcel(
             @Parameter(description = "Excel文件，包含题目数据") @RequestParam("file") MultipartFile file) throws IOException {
-        String result = questionService.importExcelBatchQuestions(file);
+        String result = questionService.importExeclBatchQuestions(file);
         log.info(result);
         return Result.success(result);
     }
@@ -98,12 +98,11 @@ public class QuestionBatchController {
     public Result<List<QuestionImportVo>> generateQuestionsByAi(
             @RequestBody @Validated AiGenerateRequestVo request) throws InterruptedException {
         List<QuestionImportVo> questionImportVoList = kimiAiService.aiGenerateQuestions(request);
-        log.info("使用ai生成：{}为标题的题目成功！计划生成：{}，实际生成：{}道题"
-                ,request.getTopic(),request.getCount(),questionImportVoList.size());
-
-       return Result.success(questionImportVoList);
+        log.info("使用ai生成：{} 为标题的题目成功！ 计划生成：{}道题，实际生成：{}道题！",
+                request.getTopic(),request.getCount(),questionImportVoList.size());
+        return Result.success(questionImportVoList);
     }
-    
+
     /**
      * 批量导入题目（通用接口，支持Excel导入或AI生成后的确认导入）
      * @param questions 题目导入DTO列表
@@ -112,11 +111,9 @@ public class QuestionBatchController {
     @PostMapping("/import-questions")  // 处理POST请求
     @Operation(summary = "批量导入题目", description = "将题目列表批量导入到数据库，支持Excel解析后的导入或AI生成后的确认导入")  // API描述
     public Result<String> importQuestions(@RequestBody List<QuestionImportVo> questions) {
-
-       int successCount = questionService.importBatchQuestions(questions);
-       log.info("批量导入题目接口调用成功一共：{}题目需要导入，成功导入了：{}道题",questions.size(),successCount);
-
-       return Result.success("批量导入题目接口调用成功一共%s题目需要导入，成功导入了%s道题".formatted(questions.size(),successCount));
+        int successCount =  questionService.importBatchQuestions(questions);
+        log.info("批量导入题目接口调用成功！ 一共：{}题目需要导入，成功导入了：{}道题！" ,questions.size(),successCount);
+        return Result.success("批量导入题目接口调用成功！ 一共：%s 题目需要导入，成功导入了：%s 道题！".formatted(questions.size(),successCount));
 
     }
     

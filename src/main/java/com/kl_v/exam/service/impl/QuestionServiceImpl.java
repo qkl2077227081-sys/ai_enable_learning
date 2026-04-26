@@ -145,56 +145,54 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void customUpdateQuestion(Question question) {
-//        1. 题目的校验 （不同id不运行title重复）
-        LambdaQueryWrapper<Question> QueryWrapper = new LambdaQueryWrapper<>();
-        QueryWrapper.ne(Question::getId,question.getId());
-        QueryWrapper.eq(Question::getTitle,question.getTitle());
-        boolean exists = baseMapper.exists(QueryWrapper);
+        //1. 题目的校验 （不同id不运行title重复）
+        LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Question::getTitle,question.getTitle());
+        queryWrapper.ne(Question::getId,question.getId());
+        boolean exists = baseMapper.exists(queryWrapper);
         if (exists) {
-            throw new RuntimeException("修改：%s的新标题：%s和其他新标题重复了".formatted(question.getId(),question.getTitle()));
+            throw new RuntimeException("修改：%s题目的新标题：%s和其他的题目重复了！修改失败！".formatted(question.getId(),question.getTitle()));
         }
-//        2. 修改题目
+        //2. 修改题目
         boolean updated = updateById(question);
-        if (!updated) {
-            throw new RuntimeException("修改：%s题目失败".formatted(question.getId()));
+        if (!updated){
+            throw new RuntimeException("修改：%s题目失败！！".formatted(question.getId()));
         }
-//        3. 获取答案对象
+        //3. 获取答案对象
         QuestionAnswer answer = question.getAnswer();
-//        4. 判断是选择题
-        if ("CHOICE".equals(question.getType())) {
+        //4. 判断是选择题
+        if ("CHOICE".equals(question.getType())){
             List<QuestionChoice> choiceList = question.getChoices();
-            //删除题目对应的所有选项（原）[根据题目id删除]
+            //删除题目对应的所有选项（原） [根据题目id删除]
             LambdaQueryWrapper<QuestionChoice> lambdaQueryWrapper = new LambdaQueryWrapper<>();
             lambdaQueryWrapper.eq(QuestionChoice::getQuestionId,question.getId());
             questionChoiceMapper.delete(lambdaQueryWrapper);
             //循环新增选项（选项上id == null）
-            //拼接正确的档案 a,b
+            // 拼接正确的档案 a,b
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < choiceList.size(); i++) {
                 QuestionChoice choice = choiceList.get(i);
                 choice.setId(null);
-                //确保，正确顺序！否则默认值为零 会产生随机
+                //确保，正确顺序！ 否则默认是0 随机了
                 choice.setSort(i);
                 choice.setCreateTime(null);
                 choice.setUpdateTime(null);
-                //新增选项的需要
+                //新增选项需要！！
                 choice.setQuestionId(question.getId());
                 questionChoiceMapper.insert(choice);
-                if (choice.getIsCorrect()) {
-                    if (sb.length() > 0) {
+                if (choice.getIsCorrect()){
+                    if (sb.length() > 0){
                         sb.append(",");
                     }
-                    sb.append((char) ('A' + i));
+                    sb.append((char)('A'+i));
                 }
             }
             //答案对象赋值选择题答案
             answer.setAnswer(sb.toString());
-
         }
-//        5. 进行答案的修改
+        //5. 进行答案的修改
         questionAnswerMapper.updateById(answer);
-//        6. 保证一致性，添加事务
-
+        //6. 保证一致性，添加事务
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -325,7 +323,7 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
      * @return
      */
     @Override
-    public String importExcelBatchQuestions(MultipartFile file) throws IOException {
+    public String importExeclBatchQuestions(MultipartFile file) throws IOException {
         //1.校验
         if (file == null || file.isEmpty()){
             throw new RuntimeException("批量导入的文件为空！");
@@ -343,34 +341,37 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
     }
 
     private Question convertQuestionImportVoToQuestion(QuestionImportVo questionImportVo) {
-        //给question本体属性赋值
+        //1. 给question本体属性赋值
         Question question = new Question();
+        //question.setTitle(questionImportVo.getTitle());
         /**
-         * 作用：给对象的属性进行赋值，根据另一个对象的相同属性值
-         * 参数一：source 【提供值】
-         * 参数二：target 【接受值】
+         * 作用：给对象的属性进行赋值！根据另一个对象的相同属性值！
+         * 参数1：source 源对象 【提供值】
+         * 参数2：target 目标对象 【接收值】
          */
         BeanUtils.copyProperties(questionImportVo,question);
-        //判断是集合，给选项集合进行赋值
-        if("CHOICE".equals(questionImportVo.getType())){
-            if (questionImportVo.getChoices().size()>0) {
+
+        //2. 判断是选择，给选项集合进行赋值
+        if ("CHOICE".equals(questionImportVo.getType())){
+            if (questionImportVo.getChoices().size() > 0) {
                 List<QuestionChoice> questionChoices = new ArrayList<>(questionImportVo.getChoices().size());
                 for (QuestionImportVo.ChoiceImportDto importVoChoice : questionImportVo.getChoices()) {
                     QuestionChoice questionChoice = new QuestionChoice();
                     questionChoice.setContent(importVoChoice.getContent());
                     questionChoice.setIsCorrect(importVoChoice.getIsCorrect());
                     questionChoice.setSort(importVoChoice.getSort());
+                    questionChoices.add(questionChoice);
                 }
                 question.setChoices(questionChoices);
-
             }
-
         }
-        //不管是不是集合创建答案并赋值
+        //3. 不管是不是选择题创建答案对象并赋值 【保存的时候，获取答案对象，选择题可以没有答案值，保存会判断答案值】
         QuestionAnswer questionAnswer = new QuestionAnswer();
-        //判断题需要将答案转成大写
-        if("JUDGE".equals(questionImportVo.getAnswer())){
+        //判断题，需要将true和false转成大写！ 否则无法识别！！
+        if ("JUDGE".equals(questionImportVo.getType())){
             questionAnswer.setAnswer(questionImportVo.getAnswer().toUpperCase());
+        }else{
+            questionAnswer.setAnswer(questionImportVo.getAnswer());
         }
         questionAnswer.setKeywords(questionImportVo.getKeywords());
         question.setAnswer(questionAnswer);
@@ -385,46 +386,38 @@ public class QuestionServiceImpl extends ServiceImpl<QuestionMapper, Question> i
         log.info("完成{}题目分数累计，累计后分数为：{}",questionId,score);
     }
 
+
     private void fillQuestionChoiceAndAnswer(List<Question> questionList) {
-        // 1. 非空判断
-        if (questionList == null || questionList.isEmpty()) {
+        //1. 非空判断
+        if (questionList == null || questionList.size() == 0) {
             log.debug("没有查询对应的问题集合数据！！");
             return;
         }
-
-        // 2. 提取 ID 集合
+        //2. 查询所有答案和选项
+        //优化查询本次题目的答案和选项
+        //查询本地题目集合对应的id集合！！
         List<Long> ids = questionList.stream().map(Question::getId).collect(Collectors.toList());
-
-        // 3. 批量查询选项和答案
-        List<QuestionChoice> questionChoiceList = questionChoiceMapper.selectList(
-                new LambdaQueryWrapper<QuestionChoice>().in(QuestionChoice::getQuestionId, ids));
-        List<QuestionAnswer> questionAnswers = questionAnswerMapper.selectList(
-                new LambdaQueryWrapper<QuestionAnswer>().in(QuestionAnswer::getQuestionId, ids));
-
-        // 4. 转化为 Map
-        // 使用 getOrDefault 或判断逻辑，防止后续 NPE
-        Map<Long, List<QuestionChoice>> questionChoiceMap = questionChoiceList.stream()
-                .collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
-
-        Map<Long, QuestionAnswer> answerMap = questionAnswers.stream()
-                .collect(Collectors.toMap(QuestionAnswer::getQuestionId, a -> a, (k1, k2) -> k1));
-
-        // 5. 循环赋值
+        //查询本次题目的选项集合
+        List<QuestionChoice> questionChoiceList =
+                questionChoiceMapper.selectList(new LambdaQueryWrapper<QuestionChoice>().in(QuestionChoice::getQuestionId,ids));
+        //查询本次题目的答案
+        List<QuestionAnswer> questionAnswers =
+                questionAnswerMapper.selectList(new LambdaQueryWrapper<QuestionAnswer>().in(QuestionAnswer::getQuestionId,ids));
+        //3. 答案和选项进行map转化
+        Map<Long, List<QuestionChoice>> questionChoiceMap =
+                questionChoiceList.stream().collect(Collectors.groupingBy(QuestionChoice::getQuestionId));
+        Map<Long, QuestionAnswer> answerMap =
+                questionAnswers.stream().collect(Collectors.toMap(QuestionAnswer::getQuestionId, a -> a));
+        //4. 循环问题集合，进行选项和答案配置
         questionList.forEach(question -> {
-            // 设置答案（即使没找到答案，answerMap.get 也会返回 null，这通常是允许的）
+            //每个题目一定答案
             question.setAnswer(answerMap.get(question.getId()));
-
-            // 如果是选择题，处理选项
-            if ("CHOICE".equals(question.getType())) {
-                // 【核心修复】：使用 getOrDefault 确保拿到的不是 null
-                List<QuestionChoice> questionChoices = questionChoiceMap.getOrDefault(question.getId(), new ArrayList<>());
-
-                // 只有当列表不为空时才进行排序
-                if (!questionChoices.isEmpty()) {
-                    questionChoices.sort(Comparator.comparingInt(QuestionChoice::getSort));
-                }
-
+            //选择题才有选项
+            if ("CHOICE".equals(question.getType())){
+                List<QuestionChoice> questionChoices = questionChoiceMap.get(question.getId());
+                questionChoices.sort(Comparator.comparingInt(QuestionChoice::getSort));
                 question.setChoices(questionChoices);
             }
         });
-    }}
+    }
+}

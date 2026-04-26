@@ -3,6 +3,7 @@ package com.kl_v.exam.service.impl;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
 import com.kl_v.exam.config.properties.KimiProperties;
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.service.KimiAiService;
@@ -25,16 +26,14 @@ import java.util.*;
 @Service
 public class KimiAiServiceImpl implements KimiAiService {
 
-
     @Autowired
     private WebClient webClient;
+
     @Autowired
     private KimiProperties kimiProperties;
 
-
     /**
      * 根据前台传递的上下文环境，生成对应的提示词
-     *
      * @param request
      * @return
      */
@@ -54,17 +53,17 @@ public class KimiAiServiceImpl implements KimiAiService {
             for (String type : typeList) {
                 switch (type.trim()) {
                     case "CHOICE":
-                        prompt.append("选择题(**重要：要求只能有四个选项)");
+                        prompt.append("选择题(**重要，最多四个选项，不可生成其他题型)");
                         if (request.getIncludeMultiple() != null && request.getIncludeMultiple()) {
                             prompt.append("(包含单选和多选)");
                         }
                         prompt.append(" ");
                         break;
                     case "JUDGE":
-                        prompt.append("判断题（**重要：确保正确答案和错误答案的数量大致平衡，不要全部都是正确或错误**） ");
+                        prompt.append("判断题（**重要：确保正确答案和错误答案的数量大致平衡，不要全部都是正确或错误且不可生成其他题型**） ");
                         break;
                     case "TEXT":
-                        prompt.append("简答题 ");
+                        prompt.append("简答题");
                         break;
                 }
             }
@@ -138,28 +137,29 @@ public class KimiAiServiceImpl implements KimiAiService {
         return prompt.toString();
     }
 
+
     /**
-     * 封装调用kimi的模型最后返回结果
-     * 进行失败重试 给三次机会
-     *      假失败 -》调用成功 1.结果格式不对 2.速率限制-》try
-     *      真失败 -》 网路异常
+     *
+     * 进行失败重试 给3次机会！！！
+     *    kimi失败场景
+     *      假失败 -》 调用成功 1. 结果格式不对  2. 速率限制 -> try
+     *        |
+     *      真失败 -》 抛出异常 -> catch
+     * 封装调用kimi模型，最终返结果
      * @param prompt
-     * @return
+     * @return 返回生成题目json 结果 / choices / message / content
      */
     @Override
     public String callKimiAi(String prompt) throws InterruptedException {
 
-        int maxTry = 3;//最多重试3次
-
+        int maxTry = 3; //最多重试3次
         for (int i = 1; i <= 3; i++) {
             try {
                 //请求体的内容 https://platform.moonshot.cn/docs/api/chat#%E8%AF%B7%E6%B1%82%E5%86%85%E5%AE%B9
-//                Map<String, String> systemMap = new HashMap<>();
                 Map<String,String> userMap = new HashMap<>();
                 userMap.put("role","user");
                 userMap.put("content",prompt); //提示词
                 List<Map> messagesList = new ArrayList<>();
-//                messagesList.add(systemMap);
                 messagesList.add(userMap);
 
                 Map<String,Object> requestBody = new HashMap<>();
@@ -178,63 +178,68 @@ public class KimiAiServiceImpl implements KimiAiService {
                 //webClient异步请求
                 //同步
                 String result = stringMono.block();
-                //jackson工具！JsonObject JsonArray
+                //jackson工具！ JsonObject JsonArray
                 JSONObject resultJsonObject = JSONObject.parseObject(result);
 
-                if (resultJsonObject.containsKey("error")) {
-                    throw new RuntimeException("访问错误了，错误信息为:"+
-                            resultJsonObject.getJSONObject("error").getString("message"));
+                //错误结果：https://platform.moonshot.cn/docs/api/chat#错误说明
+                if (resultJsonObject.containsKey("error")){
+                    throw new RuntimeException("访问错误了，错误信息为:" +
+                            resultJsonObject.getJSONObject("error").getString("message") );
                 }
-                //获取返回的内容content
-                String content = resultJsonObject.getJSONArray("choices").getJSONObject(0)
-                        .getJSONObject("message").getString("content");
+                //正确结果：https://platform.moonshot.cn/docs/api/chat#%E8%BF%94%E5%9B%9E%E5%86%85%E5%AE%B9
+                //获取返回内容content
+                // ```json  ```
+                String content = resultJsonObject.getJSONArray("choices").getJSONObject(0).
+                        getJSONObject("message").getString("content");
                 log.debug("调用kimi返回的结果为：{}",content);
+
                 if (content == null || content.isEmpty()){
-                    throw new RuntimeException("调用成功，但是没有返回结果！！");
+                    throw new RuntimeException("调用成功！但是没有返回结果！！");
                 }
                 return content;
             }catch (Exception e){
-                Thread.sleep(1000);
                 //打印信息
                 log.debug("第{}次尝试调用失败了！",i);
-                if (i == maxTry) {
+                Thread.sleep(1000);
+//                第几次尝试 i 次！
+                if(i == maxTry){
                     e.printStackTrace();
-                    throw new RuntimeException("已经重试3次！依然失败！请稍后再试吧！！");
+                    throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
                 }
-
             }
         }
-
-        throw new RuntimeException("已经重试3次！依然失败！请稍后再试吧！！");
-
+        throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
     }
+
+
 
     /**
      * ai题目信息生成
-     *
      * @param request
      * @return
      */
     @Override
     public List<QuestionImportVo> aiGenerateQuestions(AiGenerateRequestVo request) throws InterruptedException {
-        //1.校验工作
-        //2.调用方法生成提示词
+        //1. 校验工作
+        //2. 调用方法生成提示词
         String prompt = buildPrompt(request);
-        //3.调用kimi调用方法获取结果
+        //3. 调用kimi调用方法获取结果
         String content = callKimiAi(prompt);
-        //4.结果内容解析
+        //4. 结果内容解析
         /*
-        ```json{
-            question:[{},{},{}]
-        }
+           ```json
+              {
+                 questions:[{},{},{}]
+              }
+           ```
          */
         int startIndex = content.indexOf("```json");
         int endIndex = content.lastIndexOf("```");
-
-        //保证有数据，且下角标正确
+        //保证有数据，且下标正确！
         if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-            //获取真正的结果
-            String realResult = content.substring(startIndex + 7, endIndex);
+            //获取真正结果
+            String realResult = content.substring(startIndex+7,endIndex);
+            System.out.println("realResult = " + realResult);
             JSONObject jsonObject = JSONObject.parseObject(realResult);
             JSONArray questions = jsonObject.getJSONArray("questions");
             List<QuestionImportVo> questionImportVoList = new ArrayList<>();
@@ -242,7 +247,6 @@ public class KimiAiServiceImpl implements KimiAiService {
                 //获取对象
                 JSONObject questionJson = questions.getJSONObject(i);
                 QuestionImportVo questionImportVo = new QuestionImportVo();
-
                 questionImportVo.setTitle(questionJson.getString("title"));
                 questionImportVo.setType(questionJson.getString("type"));
                 questionImportVo.setMulti(questionJson.getBoolean("multi"));
@@ -254,30 +258,23 @@ public class KimiAiServiceImpl implements KimiAiService {
                 //选择题处理选项
                 if ("CHOICE".equals(questionImportVo.getType())) {
                     JSONArray choices = questionJson.getJSONArray("choices");
-                    if (choices != null && !choices.isEmpty()) {
-                        List<QuestionImportVo.ChoiceImportDto> choiceImportDtoList = new ArrayList<>();
-                        for (int j = 0; j < choices.size(); j++) {
-                            JSONObject choiceObj = choices.getJSONObject(j);
-                            QuestionImportVo.ChoiceImportDto dto = new QuestionImportVo.ChoiceImportDto();
-                            dto.setContent(choiceObj.getString("content"));
-                            dto.setIsCorrect(choiceObj.getBoolean("isCorrect"));
-                            dto.setSort(choiceObj.getInteger("sort"));
-                            choiceImportDtoList.add(dto);
-                        }
-                        questionImportVo.setChoices(choiceImportDtoList);
-                    } else {
-                        log.warn("AI生成的选择题缺失选项数据: {}", questionImportVo.getTitle());
-                        // 可以选择跳过这道题或者抛出异常
+                    List<QuestionImportVo.ChoiceImportDto> choiceImportDtoList = new ArrayList<>(choices.size());
+                    for (int i1 = 0; i1 < choices.size(); i1++) {
+                        JSONObject choicesJSONObject = choices.getJSONObject(i1);
+                        QuestionImportVo.ChoiceImportDto choiceImportDto = new QuestionImportVo.ChoiceImportDto();
+                        choiceImportDto.setContent(choicesJSONObject.getString("content"));
+                        choiceImportDto.setIsCorrect(choicesJSONObject.getBoolean("isCorrect"));
+                        choiceImportDto.setSort(choicesJSONObject.getInteger("sort"));
+                        choiceImportDtoList.add(choiceImportDto);
                     }
+                    questionImportVo.setChoices(choiceImportDtoList);
                 }
-                //答案
+                //答案 [判断题！ TRUE |FALSE  false true  f  t 是 否]
                 questionImportVo.setAnswer(questionJson.getString("answer"));
                 questionImportVoList.add(questionImportVo);
             }
-
             return questionImportVoList;
-
         }
-        throw new RuntimeException("ai生成题目json数据结构错误，无法正常解析！数据为%s".formatted(content));
+        throw new RuntimeException("ai生成题目json数据结构错误，无法正常解析！数据为：%s".formatted(content));
     }
 }

@@ -105,5 +105,5 @@ public interface QuestionService extends IService<Question> {
      * @param file
      * @return
      */
-    String importExcelBatchQuestions(MultipartFile file) throws IOException;
+    String importExeclBatchQuestions(MultipartFile file) throws IOException;
 }
