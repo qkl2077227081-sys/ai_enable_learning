@@ -99,4 +99,11 @@ public interface QuestionService extends IService<Question> {
      * @return
      */
     int importBatchQuestions(List<QuestionImportVo> questions);
+
+    /**
+     * 进行题目的批量导入
+     * @param file
+     * @return
+     */
+    String importExcelBatchQuestions(MultipartFile file) throws IOException;
 }

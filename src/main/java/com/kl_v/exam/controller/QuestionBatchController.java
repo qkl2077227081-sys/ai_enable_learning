@@ -2,6 +2,7 @@ package com.kl_v.exam.controller;
 
 
 import com.kl_v.exam.common.Result;
+import com.kl_v.exam.service.KimiAiService;
 import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.utils.ExcelUtil;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
@@ -79,10 +80,14 @@ public class QuestionBatchController {
     @PostMapping("/import-excel")  // 处理POST请求
     @Operation(summary = "从Excel文件批量导入题目", description = "解析Excel文件并将题目批量导入到数据库")  // API描述
     public Result<String> importFromExcel(
-            @Parameter(description = "Excel文件，包含题目数据") @RequestParam("file") MultipartFile file) {
-      return null;
+            @Parameter(description = "Excel文件，包含题目数据") @RequestParam("file") MultipartFile file) throws IOException {
+        String result = questionService.importExcelBatchQuestions(file);
+        log.info(result);
+        return Result.success(result);
     }
-    
+
+    @Autowired
+    private KimiAiService kimiAiService;
     /**
      * 使用AI生成题目（预览，不入库）
      * @param request AI生成请求参数
@@ -91,9 +96,12 @@ public class QuestionBatchController {
     @PostMapping("/ai-generate")  // 处理POST请求
     @Operation(summary = "AI智能生成题目", description = "使用AI技术根据指定主题和要求智能生成题目，支持预览后再决定是否导入")  // API描述
     public Result<List<QuestionImportVo>> generateQuestionsByAi(
-            @RequestBody @Validated AiGenerateRequestVo request) {
+            @RequestBody @Validated AiGenerateRequestVo request) throws InterruptedException {
+        List<QuestionImportVo> questionImportVoList = kimiAiService.aiGenerateQuestions(request);
+        log.info("使用ai生成：{}为标题的题目成功！计划生成：{}，实际生成：{}道题"
+                ,request.getTopic(),request.getCount(),questionImportVoList.size());
 
-       return Result.error("AI生成题目失败");
+       return Result.success(questionImportVoList);
     }
     
     /**
