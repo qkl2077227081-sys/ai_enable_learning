@@ -32,7 +32,7 @@ public class FileController {
 
     /**
      * 访问上传的文件
-     * @param filePath 文件路径（如：banners/2024/06/25/abc123.jpg）
+     * @param filePath 文件路径（如：banners/2026/04/25/abc123.jpg）
      * @param response HTTP响应
      */
     @GetMapping("/**")

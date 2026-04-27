@@ -49,3 +49,6 @@ kimi:
     api-key: ${KIMI_API_KEY:placeholder}
     max-tokens: 4096
     temperature: 0.3
+logging:
+  level:
+    root: info #设置级别

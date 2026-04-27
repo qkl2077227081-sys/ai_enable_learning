@@ -1,12 +1,19 @@
 package com.kl_v.exam.controller;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.Paper;
+import com.kl_v.exam.service.PaperService;
 import com.kl_v.exam.vo.AiPaperVo;
 import com.kl_v.exam.vo.PaperVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +22,14 @@ import java.util.List;
  * 试卷控制器 - 处理试卷管理相关的HTTP请求
  * 包括试卷的CRUD操作、AI智能组卷、状态管理等功能
  */
+@CrossOrigin
 @RestController  // REST控制器，返回JSON数据
 @RequestMapping("/api/papers")  // 试卷API路径前缀
 @Tag(name = "试卷管理", description = "试卷相关操作，包括创建、查询、更新、删除，以及AI智能组卷功能")  // Swagger API分组
 public class PaperController {
+    private static final Logger log = LoggerFactory.getLogger(PaperController.class);
+    @Autowired
+    private PaperService paperService;
 
 
 
@@ -31,7 +42,13 @@ public class PaperController {
             @Parameter(description = "试卷名称，支持模糊查询") @RequestParam(required = false) String name,
             @Parameter(description = "试卷状态，可选值：DRAFT/PUBLISHED/STOPPED") @RequestParam(required = false) String status) {
 
-        return Result.success(null);
+        LambdaQueryWrapper<Paper> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(!ObjectUtils.isEmpty(name),Paper::getName,name);
+        queryWrapper.eq(!ObjectUtils.isEmpty(status),Paper::getStatus,status);
+        List<Paper> paperList = paperService.list(queryWrapper);
+        log.info("试卷列表调用成功，本次条件name = {},status = {},查询列表为：{}",name,status,paperList);
+
+        return Result.success(paperList);
     }
 
     /**
@@ -74,8 +91,10 @@ public class PaperController {
      */
     @GetMapping("/{id}")  // 处理GET请求
     @Operation(summary = "获取试卷详情", description = "获取试卷的详细信息，包括试卷基本信息和包含的所有题目")  // API描述
-    public Result<Paper> getPaperById(@Parameter(description = "试卷ID") @PathVariable Integer id) {
-        return Result.success(null);
+    public Result<Paper> getPaperById(@Parameter(description = "试卷ID") @PathVariable Long id) {
+        Paper paper = paperService.customPaperDetailById(id);
+        log.info("查询试卷详情接口成功！试卷信息为：{}",paper);
+        return Result.success(paper);
     }
 
     /**

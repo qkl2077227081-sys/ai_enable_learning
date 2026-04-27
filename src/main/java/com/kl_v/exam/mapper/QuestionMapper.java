@@ -33,4 +33,11 @@ public interface QuestionMapper extends BaseMapper<Question> {
 
 
     Question customGetById(Long questionId);
+
+    /**
+     * 根据试卷id查询题目集合
+     * @param paperId
+     * @return
+     */
+    List<Question> customQuertQusetionListByPaperId(Long paperId);
 }

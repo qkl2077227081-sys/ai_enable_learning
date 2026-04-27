@@ -75,4 +75,29 @@
         where qs.is_deleted = 0 and qas.is_deleted = 0  and qs.id= #{questionId}
         order by qcs.sort asc;
     </select>
+    <select id="customQuertQusetionListByPaperId" resultMap="detailQuestionMap">
+        select qs.*,
+        qas.id qas_id,
+        qas.question_id,
+        qas.answer,
+        qas.keywords,
+        qas.create_time qas_create_time,
+        qas.update_time qas_update_time,
+        qcs.id qcs_id,
+        qcs.question_id qcs_question_id,
+        qcs.content,
+        qcs.is_correct,
+        qcs.sort,
+        qcs.create_time qcs_create_time,
+        qcs.update_time qcs_update_time,
+        pq.score paper_score
+
+        FROM paper_question pq
+        JOIN questions qs ON pq.question_id = qs.id
+        JOIN question_answers qas on qs.id = qas.question_id
+        left JOIN question_choices qcs ON qs.id = qcs.question_id AND qcs.is_deleted = 0
+        WHERE pq.is_deleted = 0 AND qs.is_deleted = 0 AND qas.is_deleted = 0
+        AND pq.paper_id = #{paperId}
+        ORDER BY qcs.sort ASC;
+    </select>
 </mapper>
