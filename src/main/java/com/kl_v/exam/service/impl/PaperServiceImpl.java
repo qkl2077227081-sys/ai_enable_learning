@@ -189,6 +189,54 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         return paper;
     }
 
+    /**
+     * 更新试卷信息
+     *
+     * @param id
+     * @param paperVo
+     * @return
+     */
+    @Override
+    public Paper customUpdatePaper(Integer id, PaperVo paperVo) {
+        //校验（不能发布状态，不同id name相同）
+        Paper paper =getById(id);
+        if("PUBLISHED".equals(paper.getStatus())){
+            throw new RuntimeException("发布状态下的试卷不允许修改");
+        }
+        //检验id，name
+        LambdaQueryWrapper<Paper> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.ne(Paper::getId,id);
+        queryWrapper.eq(Paper::getName,paperVo.getName());
+        long count = count(queryWrapper);
+        if (count > 0) {
+            throw new RuntimeException("%s试卷名字已经存在，请重新修改".formatted(paperVo.getName()));
+        }
+        //试卷的主题信息
+        BeanUtils.copyProperties(paperVo,paper);
+        //分和题目数量
+  /*
+        状态默认值：DRAFT
+        总题目数：question
+        总分数：question分数的和
+         */
+        paper.setQuestionCount(paperVo.getQuestions().size());
+        paper.setTotalScore(paperVo.getQuestions().values().stream().reduce(BigDecimal.ZERO,BigDecimal::add));
+        //2. 完成试卷的插入 -》 主键回显 paperId
+        updateById(paper);
+//        3.中间表先删除后保存
+        paperQuestionService.remove(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getPaperId,paper.getId()));
+        List<PaperQuestion> paperQuestionList = paperVo.getQuestions().entrySet().stream().map(entry -> {
+            PaperQuestion paperQuestion =
+                    new PaperQuestion(paper.getId().intValue(), Long.valueOf(entry.getKey()), entry.getValue());
+            return paperQuestion;
+        }).collect(Collectors.toList());
+//        4. 中间表集合插入 【批量插入】 -》 中间表的service对象
+        paperQuestionService.saveBatch(paperQuestionList);
+//        5. 返回对应paper对象
+        return paper;
+
+    }
+
     //给予类型赋值
     private int typeToInt(String type) {
         switch (type) {
