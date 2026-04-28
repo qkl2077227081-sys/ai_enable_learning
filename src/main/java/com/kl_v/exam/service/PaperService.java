@@ -2,6 +2,7 @@ package com.kl_v.exam.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.Paper;
+import com.kl_v.exam.vo.AiPaperVo;
 import com.kl_v.exam.vo.PaperVo;
 
 /**
@@ -27,4 +28,12 @@ public interface PaperService extends IService<Paper> {
      * @return
      */
     Paper customCreatePaper(PaperVo paperVo);
+
+    /**
+     * ai智能组卷
+     * @param aiPaperVo
+     * @return
+     */
+
+    Paper customAiCreatePaper(AiPaperVo aiPaperVo);
 }

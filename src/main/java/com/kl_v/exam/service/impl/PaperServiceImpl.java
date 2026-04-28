@@ -1,6 +1,7 @@
 package com.kl_v.exam.service.impl;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.entity.Paper;
 import com.kl_v.exam.entity.PaperQuestion;
@@ -10,7 +11,9 @@ import com.kl_v.exam.mapper.QuestionMapper;
 import com.kl_v.exam.service.PaperQuestionService;
 import com.kl_v.exam.service.PaperService;
 import com.kl_v.exam.service.QuestionService;
+import com.kl_v.exam.vo.AiPaperVo;
 import com.kl_v.exam.vo.PaperVo;
+import com.kl_v.exam.vo.RuleVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -83,10 +84,17 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
      */
     @Override
     public Paper customCreatePaper(PaperVo paperVo) {
-//        1. 完善试卷内信息 名字 描述 时间  -> 状态 ，总题目数 ， 总分数
+        //1. 完善试卷内信息 名字 描述 时间  -> 状态 ，总题目数 ， 总分数
         Paper paper = new Paper();
         //名字 描述 时间
         BeanUtils.copyProperties(paperVo,paper);
+        //进行名字的校验
+        LambdaQueryWrapper<Paper> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Paper::getName,paper.getName());
+        boolean exists = baseMapper.exists(queryWrapper);
+        if (exists) {
+            throw new RuntimeException("在当前页面里已经存在%s，不可重复".formatted(paper.getName()));
+        }
         //态，总题目数，总分数
         paper.setStatus("DRAFT");
 
@@ -116,6 +124,68 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
 //        4. 中间表集合插入 【批量插入】 -》 中间表的service对象
         paperQuestionService.saveBatch(paperQuestionList);
 //        5. 返回对应paper对象
+        return paper;
+    }
+
+    /**
+     * ai智能组卷
+     *
+     * @param aiPaperVo
+     * @return
+     */
+    @Override
+    public Paper customAiCreatePaper(AiPaperVo aiPaperVo) {
+//        试卷基本信息 + 草稿状态 进行保存 （回显试卷的id）
+        Paper paper = new Paper();
+        BeanUtils.copyProperties(aiPaperVo,paper);
+        //进行名字的校验
+        LambdaQueryWrapper<Paper> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Paper::getName,paper.getName());
+        boolean exists = baseMapper.exists(lambdaQueryWrapper);
+        if (exists) {
+            throw new RuntimeException("在当前页面里已经存在%s，不可重复".formatted(paper.getName()));
+        }
+        paper.setStatus("DRAFT");
+        save(paper);
+        //2.组卷规则下的试题选择和中间表保存
+        int questionCount = 0;
+        BigDecimal totalScore = BigDecimal.ZERO;
+
+        for (RuleVo rule : aiPaperVo.getRules()) {
+            //需要校验规则下的题目数量 = 0 跳过
+            if(rule.getCount() == 0){
+                log.warn("在：{}类型下，不需要出题",rule.getType().name());
+                continue;
+            }
+            LambdaQueryWrapper<Question> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Question::getType,rule.getType().name());
+            queryWrapper.in(!ObjectUtils.isEmpty(rule.getCategoryIds()),Question::getCategoryId,rule.getCategoryIds());
+            List<Question> AllQuestionList = questionMapper.selectList(queryWrapper);
+            //步骤三校验查询的题目集合 集合为空
+            if (ObjectUtils.isEmpty(AllQuestionList)) {
+                log.warn("在：{}类型下，我们制定的分类：{}没有查询到题目信息",rule.getType().name(),rule.getCategoryIds());
+                continue;
+            }
+            //步骤四判断是否有规则下count数量，没有全都要了
+            int realNumbers = Math.min(rule.getCount(), AllQuestionList.size());
+            //步骤五：本次规则下添加的数量和分数累加
+            questionCount+=realNumbers;
+            totalScore = totalScore.add(BigDecimal.valueOf((long) realNumbers * rule.getScore()));
+            //步骤六：先打乱顺序，在截取需要的题目数量
+            Collections.shuffle(AllQuestionList);
+            List<Question> realQuestionList = AllQuestionList.subList(0, realNumbers);
+            //步骤七转成中间表并进行保存
+            List<PaperQuestion> paperQuestionList = realQuestionList.stream().map(question -> {
+                PaperQuestion paperQuestion = new PaperQuestion(paper.getId().intValue(), question.getId(), BigDecimal.valueOf(rule.getScore()));
+                return paperQuestion;
+            }).collect(Collectors.toList());
+            paperQuestionService.saveBatch(paperQuestionList);
+        }
+        //修改试卷信息（总题目数，总分数）
+        paper.setQuestionCount(questionCount);
+        paper.setTotalScore(totalScore);
+        updateById(paper);
+
         return paper;
     }
 
