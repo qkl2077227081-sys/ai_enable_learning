@@ -45,4 +45,11 @@ public interface PaperService extends IService<Paper> {
      * @return
      */
     Paper customUpdatePaper(Integer id, PaperVo paperVo);
+
+    /**
+     * 更新试卷状态
+     * @param id
+     * @param status
+     */
+    void customUpdatePaperStatus(Integer id, String status);
 }

@@ -2,6 +2,7 @@ package com.kl_v.exam.service.impl;
 
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.entity.Paper;
 import com.kl_v.exam.entity.PaperQuestion;
@@ -235,6 +236,30 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
 //        5. 返回对应paper对象
         return paper;
 
+    }
+
+    /**
+     * 更新试卷状态
+     *
+     * @param id
+     * @param status
+     */
+    @Override
+    public void customUpdatePaperStatus(Integer id, String status) {
+        //判断目标状态-》发布 -》查询试卷的题目数量
+        if("PUBLISHED".equals(status)){
+            LambdaQueryWrapper<PaperQuestion> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(PaperQuestion::getPaperId,id);
+            long count = paperQuestionService.count(queryWrapper);
+            if (count == 0) {
+                throw new RuntimeException("状态修改失败！！目标发布状态下的试卷必须有题目！");
+            }
+        }
+        //正常修改状态即可
+        LambdaUpdateWrapper<Paper> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.set(Paper::getStatus,status);
+        updateWrapper.eq(Paper::getId,id);
+        update(updateWrapper);
     }
 
     //给予类型赋值
