@@ -2,6 +2,7 @@ package com.kl_v.exam.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.Paper;
+import com.kl_v.exam.vo.PaperVo;
 
 /**
  * 试卷服务接口
@@ -18,4 +19,12 @@ public interface PaperService extends IService<Paper> {
      * @return
      */
     Paper customPaperDetailById(Long id);
+
+
+    /**
+     * 手动组卷
+     * @param paperVo
+     * @return
+     */
+    Paper customCreatePaper(PaperVo paperVo);
 }
