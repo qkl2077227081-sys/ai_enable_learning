@@ -52,4 +52,10 @@ public interface PaperService extends IService<Paper> {
      * @param status
      */
     void customUpdatePaperStatus(Integer id, String status);
+
+    /**
+     * 根据id删除试卷功能
+     * @param id
+     */
+    void customRemoveId(Integer id);
 }

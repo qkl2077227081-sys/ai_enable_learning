@@ -128,6 +128,8 @@ public class PaperController {
     public Result<Void> deletePaper(@Parameter(description = "试卷ID") @PathVariable Integer id) {
         // 检查试卷是否存在  // 验证试卷存在性
 
-        return Result.error("试卷删除失败");
+        paperService.customRemoveId(id);
+        log.info("id:{}的试卷删除成功",id);
+        return Result.success("试卷删除成功");
     }
 } 

@@ -4,9 +4,11 @@ package com.kl_v.exam.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.kl_v.exam.entity.ExamRecord;
 import com.kl_v.exam.entity.Paper;
 import com.kl_v.exam.entity.PaperQuestion;
 import com.kl_v.exam.entity.Question;
+import com.kl_v.exam.mapper.ExamRecordMapper;
 import com.kl_v.exam.mapper.PaperMapper;
 import com.kl_v.exam.mapper.QuestionMapper;
 import com.kl_v.exam.service.PaperQuestionService;
@@ -38,6 +40,8 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
 
     @Autowired
     private PaperQuestionService paperQuestionService;
+    @Autowired
+    private ExamRecordMapper examRecordMapper;
 
 
     /**
@@ -260,6 +264,34 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         updateWrapper.set(Paper::getStatus,status);
         updateWrapper.eq(Paper::getId,id);
         update(updateWrapper);
+    }
+
+
+    /**
+     * 根据id删除试卷功能
+     *
+     * @param id
+     */
+    @Override
+    public void customRemoveId(Integer id) {
+        //不能是发布状态
+        Paper paper = getById(id);
+        if (paper == null || paper.getStatus().equals("PUBLISHED")) {
+            throw new RuntimeException("发布状态的试卷不能删除！");
+        }
+        //不能有关联的考试记录
+        LambdaQueryWrapper<ExamRecord> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(ExamRecord::getExamId,id);
+        Long count = examRecordMapper.selectCount(lambdaQueryWrapper);
+        if (count>0) {
+            throw new RuntimeException("该试卷：%s下面有关联%s条考试记录！无法直接删除".formatted(id,count));
+        }
+        //删除自身表
+        removeById(Long.valueOf(id));
+        //删除中间表
+        paperQuestionService.remove(new LambdaQueryWrapper<PaperQuestion>().eq(PaperQuestion::getPaperId,id));
+
+
     }
 
     //给予类型赋值
