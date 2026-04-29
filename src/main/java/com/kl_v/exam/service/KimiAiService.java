@@ -1,7 +1,9 @@
 package com.kl_v.exam.service;
 
 
+import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
+import com.kl_v.exam.vo.GradingResult;
 import com.kl_v.exam.vo.QuestionImportVo;
 
 import java.util.List;
@@ -12,8 +14,10 @@ import java.util.List;
  */
 public interface KimiAiService {
 
+
     /**
      * 根据前台传递的上下文环境，生成对应的提示词
+     *
      * @param request
      * @return
      */
@@ -21,6 +25,7 @@ public interface KimiAiService {
 
     /**
      * 封装调用kimi的模型最后返回结
+     *
      * @param prompt
      * @return 返回生成题目json结果/choice/message/content
      */
@@ -29,8 +34,20 @@ public interface KimiAiService {
 
     /**
      * ai题目信息生成
+     *
      * @param request
      * @return
      */
     List<QuestionImportVo> aiGenerateQuestions(AiGenerateRequestVo request) throws InterruptedException;
+
+
+    /**
+     * 使用ai进行简答题判断
+     *
+     * @param question
+     * @param userAnswer
+     * @param maxScore
+     * @return
+     */
+    GradingResult gradingTextQuestion(Question question, String userAnswer, Integer maxScore) throws InterruptedException;
 }

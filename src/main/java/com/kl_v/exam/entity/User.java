@@ -18,8 +18,7 @@ import lombok.Data;
  * - 对应表：users
  * - 主键：id（自增）
  * - 索引：username（唯一索引）
- * 
- * @author 智能学习平台开发团队
+ *
  * @version 1.0
  */
 @Data  // Lombok注解：自动生成getter、setter、toString、equals、hashCode方法

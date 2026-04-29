@@ -8,6 +8,7 @@ import com.kl_v.exam.config.properties.KimiProperties;
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.service.KimiAiService;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
+import com.kl_v.exam.vo.GradingResult;
 import com.kl_v.exam.vo.QuestionImportVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -276,5 +277,86 @@ public class KimiAiServiceImpl implements KimiAiService {
             return questionImportVoList;
         }
         throw new RuntimeException("ai生成题目json数据结构错误，无法正常解析！数据为：%s".formatted(content));
+    }
+
+    /**
+     * 使用ai进行简答题判断
+     *
+     * @param question
+     * @param userAnswer
+     * @param maxScore
+     * @return
+     */
+    @Override
+    public GradingResult gradingTextQuestion(Question question, String userAnswer, Integer maxScore) throws InterruptedException {
+        //生成ai调用的提示词
+        String gradingPrompt = buildGradingPrompt(question, userAnswer, maxScore);
+        //调用ai模型获取返回结果
+        String content = callKimiAi(gradingPrompt);
+        //进行结果的解析
+//        prompt.append("{\n");
+//        prompt.append("  \"score\": 实际得分(整数),\n");
+//        prompt.append("  \"feedback\": \"具体的评价反馈(50字以内)\",\n");
+//        prompt.append("  \"reason\": \"扣分原因或得分依据(30字以内)\"\n");
+//        prompt.append("}");
+        com.alibaba.fastjson2.JSONObject jsonObject = JSON.parseObject(content);
+        Integer aiScore = jsonObject.getInteger("score");
+        String feedback = jsonObject.getString("feedback");
+        String reason = jsonObject.getString("reason");
+
+        if (aiScore>maxScore)aiScore = maxScore;
+        if (aiScore<0)aiScore = 0;
+
+        GradingResult gradingResult = new GradingResult(aiScore, feedback, reason);
+
+
+        return gradingResult;
+    }
+
+    /**
+     * 构建判卷提示词
+     */
+    private String buildGradingPrompt(Question question, String userAnswer, Integer maxScore) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一名专业的考试阅卷老师，请对以下题目进行判卷：\n\n");
+
+        prompt.append("【题目信息】\n");
+        prompt.append("题型：").append(getQuestionTypeText(question.getType())).append("\n");
+        prompt.append("题目：").append(question.getTitle()).append("\n");
+        prompt.append("标准答案：").append(question.getAnswer().getAnswer()).append("\n");
+        prompt.append("满分：").append(maxScore).append("分\n\n");
+
+        prompt.append("【学生答案】\n");
+        prompt.append(userAnswer.trim().isEmpty() ? "（未作答）" : userAnswer).append("\n\n");
+
+        prompt.append("【判卷要求】\n");
+        if ("CHOICE".equals(question.getType()) || "JUDGE".equals(question.getType())) {
+            prompt.append("- 客观题：答案完全正确得满分，答案错误得0分\n");
+        } else if ("TEXT".equals(question.getType())) {
+            prompt.append("- 主观题：根据答案的准确性、完整性、逻辑性进行评分\n");
+            prompt.append("- 答案要点正确且完整：80-100%分数\n");
+            prompt.append("- 答案基本正确但不够完整：60-80%分数\n");
+            prompt.append("- 答案部分正确：30-60%分数\n");
+            prompt.append("- 答案完全错误或未作答：0分\n");
+        }
+
+        prompt.append("\n请按以下JSON格式返回判卷结果：\n");
+        prompt.append("{\n");
+        prompt.append("  \"score\": 实际得分(整数),\n");
+        prompt.append("  \"feedback\": \"具体的评价反馈(50字以内)\",\n");
+        prompt.append("  \"reason\": \"扣分原因或得分依据(30字以内)\"\n");
+        prompt.append("}");
+
+        return prompt.toString();
+    }
+    /**
+     * 获取题目类型文本
+     */
+    private String getQuestionTypeText(String type) {
+        Map<String, String> typeMap = new HashMap<>();
+        typeMap.put("CHOICE", "选择题");
+        typeMap.put("JUDGE", "判断题");
+        typeMap.put("TEXT", "简答题");
+        return typeMap.getOrDefault(type, "未知题型");
     }
 }
