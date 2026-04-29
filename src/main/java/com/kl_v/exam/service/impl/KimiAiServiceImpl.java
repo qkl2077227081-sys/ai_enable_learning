@@ -314,6 +314,25 @@ public class KimiAiServiceImpl implements KimiAiService {
     }
 
     /**
+     * 生成ai考试评语
+     *
+     * @param totalScore
+     * @param maxScore
+     * @param questionCount
+     * @param correctCount
+     * @return
+     */
+    @Override
+    public String buildSummary(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) throws InterruptedException {
+        //构建提示词
+        String summaryPrompt = buildSummaryPrompt(totalScore, maxScore, questionCount, correctCount);
+        //调用kimiai
+        String content = callKimiAi(summaryPrompt);
+        //结果解析
+        return content;
+    }
+
+    /**
      * 构建判卷提示词
      */
     private String buildGradingPrompt(Question question, String userAnswer, Integer maxScore) {
@@ -358,5 +377,33 @@ public class KimiAiServiceImpl implements KimiAiService {
         typeMap.put("JUDGE", "判断题");
         typeMap.put("TEXT", "简答题");
         return typeMap.getOrDefault(type, "未知题型");
+    }
+
+
+    /**
+     * 构建考试总评提示词
+     */
+    private String buildSummaryPrompt(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) {
+        double percentage = (double) totalScore / maxScore * 100;
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("你是一名资深的IT行业教育专家，请为学生的考试表现提供专业的总评和学习建议：\n\n");
+
+        prompt.append("【考试成绩】\n");
+        prompt.append("总得分：").append(totalScore).append("/").append(maxScore).append("分\n");
+        prompt.append("得分率：").append(String.format("%.1f", percentage)).append("%\n");
+        prompt.append("题目总数：").append(questionCount).append("道\n");
+        prompt.append("答对题数：").append(correctCount).append("道\n\n");
+
+        prompt.append("【要求】\n");
+        prompt.append("请提供一份150字左右的考试总评，包括：\n");
+        prompt.append("1. 对本次考试表现的客观评价\n");
+        prompt.append("2. 指出优势和不足之处\n");
+        prompt.append("3. 提供具体的学习建议和改进方向\n");
+        prompt.append("4. 给予鼓励和激励\n\n");
+
+        prompt.append("请直接返回总评内容，无需特殊格式：");
+
+        return prompt.toString();
     }
 }

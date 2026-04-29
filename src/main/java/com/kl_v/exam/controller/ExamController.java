@@ -53,7 +53,7 @@ public class ExamController {
     @Operation(summary = "提交考试答案", description = "学生提交考试答案，系统记录答题情况")  // API描述
     public Result<Void> submitAnswers(
             @Parameter(description = "考试记录ID") @PathVariable Integer examRecordId, 
-            @RequestBody List<SubmitAnswerVo> answers) {
+            @RequestBody List<SubmitAnswerVo> answers) throws InterruptedException {
         examService.customSubmitAnswer(examRecordId,answers);
         log.info("提交答案接口调用成功");
         return Result.success("答案提交成功");

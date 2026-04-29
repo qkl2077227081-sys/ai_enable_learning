@@ -32,13 +32,13 @@ public interface ExamService extends IService<ExamRecord> {
      * @param examRecordId
      * @param answers
      */
-    void customSubmitAnswer(Integer examRecordId, List<SubmitAnswerVo> answers);
+    void customSubmitAnswer(Integer examRecordId, List<SubmitAnswerVo> answers) throws InterruptedException;
 
     /**
      * ai试卷批阅功能
      * @param examRecordId
      * @return
      */
-    ExamRecord gradeExam(Integer examRecordId);
+    ExamRecord gradeExam(Integer examRecordId) throws InterruptedException;
 }
  

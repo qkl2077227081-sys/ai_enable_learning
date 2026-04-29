@@ -50,4 +50,18 @@ public interface KimiAiService {
      * @return
      */
     GradingResult gradingTextQuestion(Question question, String userAnswer, Integer maxScore) throws InterruptedException;
+
+    /**
+     * 生成ai考试评语
+     * @param totalScore
+     * @param maxScore
+     * @param questionCount
+     * @param correctCount
+     * @return
+     */
+    String buildSummary(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) throws InterruptedException;
+
+
 }
+
+

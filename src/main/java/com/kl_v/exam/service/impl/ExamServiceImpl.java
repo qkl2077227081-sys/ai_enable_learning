@@ -124,7 +124,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
      * @param answers
      */
     @Override
-    public void customSubmitAnswer(Integer examRecordId, List<SubmitAnswerVo> answers) {
+    public void customSubmitAnswer(Integer examRecordId, List<SubmitAnswerVo> answers) throws InterruptedException {
         //宏观：提交答案中间表保存 修改考试记录数据 触发开始判卷（examRecordId）
         //1.中间表保存问题
         if(!ObjectUtils.isEmpty(answers)){
@@ -151,7 +151,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
      * @return
      */
     @Override
-    public ExamRecord gradeExam(Integer examRecordId) {
+    public ExamRecord gradeExam(Integer examRecordId) throws InterruptedException {
         //宏观来说获取考试记录相关信息（考试记录对象 考试记录答题记录 考试对应试卷）
         // 进行循环判卷（1.答题记录进行修改，2.总体提到总分数 总正确数）
         //修改考试记录（状态-》一批阅  修改 -》总分数）
@@ -240,8 +240,11 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
         }
 
         //进行ai生成评价，进行考试记录修改和完善
+
+        String summary = kimiAiService.buildSummary(totalScore, paper.getTotalScore().intValue(), paper.getQuestionCount(), correctNumber);
+
         examRecord.setScore(totalScore);
-        examRecord.setAnswers("暂无ai");
+        examRecord.setAnswers(summary);
         examRecord.setStatus("已批阅");
         updateById(examRecord);
         return examRecord;
