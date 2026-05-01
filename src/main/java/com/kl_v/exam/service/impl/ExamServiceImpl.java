@@ -8,8 +8,8 @@ import com.kl_v.exam.entity.Paper;
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.mapper.ExamRecordMapper;
 import com.kl_v.exam.service.AnswerRecordService;
+import com.kl_v.exam.service.DeepSeekAiService;
 import com.kl_v.exam.service.ExamService;
-import com.kl_v.exam.service.KimiAiService;
 import com.kl_v.exam.service.PaperService;
 import com.kl_v.exam.vo.ExamRankingVO;
 import com.kl_v.exam.vo.GradingResult;
@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -40,7 +39,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
     @Autowired
     private AnswerRecordService answerRecordService;
     @Autowired
-    private KimiAiService kimiAiService;
+    private DeepSeekAiService deepSeekAiService;
     @Autowired
     private ExamRecordMapper examRecordMapper;
 
@@ -209,7 +208,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
                 }else {
                     //简答进行ai判断
                     //简答题
-                    GradingResult result = kimiAiService.gradingTextQuestion(question, userAnswer, question.getPaperScore().intValue());
+                    GradingResult result = deepSeekAiService.gradingTextQuestion(question, userAnswer, question.getPaperScore().intValue());
                     //分
                     answerRecord.setScore(result.getScore());
                     //是否正确（0 1 2）
@@ -244,7 +243,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
 
         //进行ai生成评价，进行考试记录修改和完善
 
-        String summary = kimiAiService.buildSummary(totalScore, paper.getTotalScore().intValue(), paper.getQuestionCount(), correctNumber);
+        String summary = deepSeekAiService.buildSummary(totalScore, paper.getTotalScore().intValue(), paper.getQuestionCount(), correctNumber);
 
         examRecord.setScore(totalScore);
         examRecord.setAnswers(summary);

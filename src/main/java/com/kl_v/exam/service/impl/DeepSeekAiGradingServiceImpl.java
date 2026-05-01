@@ -1,12 +1,11 @@
 package com.kl_v.exam.service.impl;
 
-
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson2.JSON;
-import com.kl_v.exam.config.properties.KimiProperties;
+import com.kl_v.exam.config.properties.DeepSeekProperties;
 import com.kl_v.exam.entity.Question;
-import com.kl_v.exam.service.KimiAiService;
+import com.kl_v.exam.service.DeepSeekAiService;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
 import com.kl_v.exam.vo.GradingResult;
 import com.kl_v.exam.vo.QuestionImportVo;
@@ -14,24 +13,30 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.*;
 
 /**
- * Kimi AI服务实现类
- * 调用Kimi API智能生成题目
+ * ClassName: DeepSeekAiGradingServiceImpl
+ * Package: com.kl_v.exam.service.impl
+ * Description:
+ *
+ * @Author V
+ * @Create 2026/5/1 下午5:46
+ * @Version 1.0
  */
 @Slf4j
 @Service
-public class KimiAiServiceImpl implements KimiAiService {
+public class DeepSeekAiGradingServiceImpl implements DeepSeekAiService {
 
     @Autowired
     private WebClient webClient;
 
     @Autowired
-    private KimiProperties kimiProperties;
+    private DeepSeekProperties deepSeekProperties;
 
     /**
      * 根据前台传递的上下文环境，生成对应的提示词
@@ -150,66 +155,100 @@ public class KimiAiServiceImpl implements KimiAiService {
      * @param prompt
      * @return 返回生成题目json 结果 / choices / message / content
      */
-    @Override
-    public String callKimiAi(String prompt) throws InterruptedException {
+    /**
+     * 调用 DeepSeek AI 接口
+     * 逻辑：手动循环尝试连接，区分业务异常与网络异常
+     */
+    public String callDeepSeekAi(String prompt) {
+        // 1. 准备请求参数
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", deepSeekProperties.getModel());
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "user", "content", prompt));
+        requestBody.put("messages", messages);
+        requestBody.put("temperature", deepSeekProperties.getTemperature());
+        requestBody.put("max_tokens", deepSeekProperties.getMaxTokens());
 
-        int maxTry = 3; //最多重试3次
-        for (int i = 1; i <= 3; i++) {
+        int maxAttempts = 3; // 最大尝试次数
+        Exception lastException = null;
+
+        // 2. 手动循环尝试“连接并调用”
+        for (int i = 1; i <= maxAttempts; i++) {
             try {
-                //请求体的内容 https://platform.moonshot.cn/docs/api/chat#%E8%AF%B7%E6%B1%82%E5%86%85%E5%AE%B9
-                Map<String,String> userMap = new HashMap<>();
-                userMap.put("role","user");
-                userMap.put("content",prompt); //提示词
-                List<Map> messagesList = new ArrayList<>();
-                messagesList.add(userMap);
+                log.info("开始第 {} 次尝试连接 DeepSeek API...", i);
 
-                Map<String,Object> requestBody = new HashMap<>();
-                requestBody.put("model",kimiProperties.getModel());
-                requestBody.put("messages",messagesList);
-                requestBody.put("temperature", kimiProperties.getTemperature());
-                requestBody.put("max_tokens", kimiProperties.getMaxTokens());
-
-                //2. 发起网络请求调用
-                Mono<String> stringMono = webClient.post()
+                // 发起单次请求
+                String responseJson = webClient.post()
                         .bodyValue(requestBody)
-                        .retrieve() //准备了
+                        .retrieve()
                         .bodyToMono(String.class)
-                        .timeout(Duration.ofSeconds(100));
+                        .timeout(Duration.ofSeconds(60)) // 单次请求超时控制
+                        .block(); // 同步阻塞获取
 
-                //webClient异步请求
-                //同步
-                String result = stringMono.block();
-                //jackson工具！ JsonObject JsonArray
-                JSONObject resultJsonObject = JSONObject.parseObject(result);
+                // 3. 校验并解析结果
+                return parseAndValidateResponse(responseJson);
 
-                //错误结果：https://platform.moonshot.cn/docs/api/chat#错误说明
-                if (resultJsonObject.containsKey("error")){
-                    throw new RuntimeException("访问错误了，错误信息为:" +
-                            resultJsonObject.getJSONObject("error").getString("message") );
+            } catch (WebClientResponseException e) {
+                lastException = e;
+                // 关键：判断是否需要重试
+                // 401(Unauthorized), 403(Forbidden), 400(Bad Request) 不需要重试
+                if (e.getStatusCode().is4xxClientError()) {
+                    log.error("DeepSeek 客户端请求错误 ({})，停止重试。错误原因: {}", e.getStatusCode(), e.getResponseBodyAsString());
+                    throw new RuntimeException("AI 服务鉴权或参数异常，请检查配置", e);
                 }
-                //正确结果：https://platform.moonshot.cn/docs/api/chat#%E8%BF%94%E5%9B%9E%E5%86%85%E5%AE%B9
-                //获取返回内容content
-                // ```json  ```
-                String content = resultJsonObject.getJSONArray("choices").getJSONObject(0).
-                        getJSONObject("message").getString("content");
-                log.debug("调用kimi返回的结果为：{}",content);
 
-                if (content == null || content.isEmpty()){
-                    throw new RuntimeException("调用成功！但是没有返回结果！！");
-                }
-                return content;
-            }catch (Exception e){
-                //打印信息
-                log.debug("第{}次尝试调用失败了！",i);
-                Thread.sleep(1000);
-//                第几次尝试 i 次！
-                if(i == maxTry){
-                    e.printStackTrace();
-                    throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
+                // 5xx 错误或其它错误，记录日志并进入循环重试
+                log.warn("第 {} 次调用 DeepSeek 失败，服务器返回: {}", i, e.getStatusCode());
+            } catch (Exception e) {
+                lastException = e;
+                log.warn("第 {} 次尝试连接 DeepSeek 发生异常: {}", i, e.getMessage());
+            }
+
+            // 如果不是最后一次尝试，则等待一会再重试
+            if (i < maxAttempts) {
+                try {
+                    Thread.sleep(1000 * i); // 递增等待时间
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
                 }
             }
         }
-        throw new RuntimeException("已经重试3次！依然失败！请稍后再试！！");
+
+        // 4. 重试耗尽后的处理
+        throw new RuntimeException("已尝试 " + maxAttempts + " 次连接 DeepSeek AI 均失败，最后一次错误: "
+                + (lastException != null ? lastException.getMessage() : "未知"));
+    }
+
+    /**
+     * 内部方法：解析 JSON 响应
+     */
+    private String parseAndValidateResponse(String responseJson) {
+        if (responseJson == null || responseJson.isBlank()) {
+            throw new RuntimeException("DeepSeek 返回了空响应内容");
+        }
+
+        JSONObject jsonObject = JSONObject.parseObject(responseJson);
+
+        // 检查 API 内部错误码
+        if (jsonObject.containsKey("error")) {
+            String errorMsg = jsonObject.getJSONObject("error").getString("message");
+            throw new RuntimeException("DeepSeek API 业务错误: " + errorMsg);
+        }
+
+        JSONArray choices = jsonObject.getJSONArray("choices");
+        if (choices == null || choices.isEmpty()) {
+            throw new RuntimeException("AI 响应 choices 节点为空");
+        }
+
+        String content = choices.getJSONObject(0)
+                .getJSONObject("message")
+                .getString("content");
+
+        if (content == null || content.isBlank()) {
+            throw new RuntimeException("AI 生成的内容为空");
+        }
+
+        return content;
     }
 
 
@@ -225,7 +264,7 @@ public class KimiAiServiceImpl implements KimiAiService {
         //2. 调用方法生成提示词
         String prompt = buildPrompt(request);
         //3. 调用kimi调用方法获取结果
-        String content = callKimiAi(prompt);
+        String content = callDeepSeekAi(prompt);
         //4. 结果内容解析
         /*
            ```json
@@ -292,7 +331,7 @@ public class KimiAiServiceImpl implements KimiAiService {
         //生成ai调用的提示词
         String gradingPrompt = buildGradingPrompt(question, userAnswer, maxScore);
         //调用ai模型获取返回结果
-        String content = callKimiAi(gradingPrompt);
+        String content = callDeepSeekAi(gradingPrompt);
         //进行结果的解析
 //        prompt.append("{\n");
 //        prompt.append("  \"score\": 实际得分(整数),\n");
@@ -327,7 +366,7 @@ public class KimiAiServiceImpl implements KimiAiService {
         //构建提示词
         String summaryPrompt = buildSummaryPrompt(totalScore, maxScore, questionCount, correctCount);
         //调用kimiai
-        String content = callKimiAi(summaryPrompt);
+        String content = callDeepSeekAi(summaryPrompt);
         //结果解析
         return content;
     }

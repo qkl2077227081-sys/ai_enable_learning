@@ -1,6 +1,5 @@
 package com.kl_v.exam.service;
 
-
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
 import com.kl_v.exam.vo.GradingResult;
@@ -9,10 +8,16 @@ import com.kl_v.exam.vo.QuestionImportVo;
 import java.util.List;
 
 /**
- * Kimi AI服务接口
- * 用于调用Kimi API生成题目
+ * ClassName: DeepSeekAiService
+ * Package: com.kl_v.exam.service
+ * Description:
+ *
+ * @Author V
+ * @Create 2026/5/1 下午5:45
+ * @Version 1.0
  */
-public interface KimiAiService {
+
+public interface DeepSeekAiService {
 
 
     /**
@@ -29,7 +34,7 @@ public interface KimiAiService {
      * @param prompt
      * @return 返回生成题目json结果/choice/message/content
      */
-    String callKimiAi(String prompt) throws InterruptedException;
+    String callDeepSeekAi(String prompt) throws InterruptedException;
 
 
     /**
@@ -61,7 +66,4 @@ public interface KimiAiService {
      */
     String buildSummary(Integer totalScore, Integer maxScore, Integer questionCount, Integer correctCount) throws InterruptedException;
 
-
 }
-
-

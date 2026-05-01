@@ -2,7 +2,7 @@ package com.kl_v.exam.controller;
 
 
 import com.kl_v.exam.common.Result;
-import com.kl_v.exam.service.KimiAiService;
+import com.kl_v.exam.service.DeepSeekAiService;
 import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.utils.ExcelUtil;
 import com.kl_v.exam.vo.AiGenerateRequestVo;
@@ -86,8 +86,10 @@ public class QuestionBatchController {
         return Result.success(result);
     }
 
+
+
     @Autowired
-    private KimiAiService kimiAiService;
+    private DeepSeekAiService deepSeekAiService;
     /**
      * 使用AI生成题目（预览，不入库）
      * @param request AI生成请求参数
@@ -97,7 +99,7 @@ public class QuestionBatchController {
     @Operation(summary = "AI智能生成题目", description = "使用AI技术根据指定主题和要求智能生成题目，支持预览后再决定是否导入")  // API描述
     public Result<List<QuestionImportVo>> generateQuestionsByAi(
             @RequestBody @Validated AiGenerateRequestVo request) throws InterruptedException {
-        List<QuestionImportVo> questionImportVoList = kimiAiService.aiGenerateQuestions(request);
+        List<QuestionImportVo> questionImportVoList = deepSeekAiService.aiGenerateQuestions(request);
         log.info("使用ai生成：{} 为标题的题目成功！ 计划生成：{}道题，实际生成：{}道题！",
                 request.getTopic(),request.getCount(),questionImportVoList.size());
         return Result.success(questionImportVoList);
@@ -117,65 +119,4 @@ public class QuestionBatchController {
 
     }
 
-
-
-
-    /**
-     * 验证题目数据
-     * @param questions 题目列表
-     * @return 验证结果
-     */
-    @PostMapping("/validate")  // 处理POST请求
-    @Operation(summary = "验证题目数据", description = "验证题目数据的完整性和格式正确性，返回验证结果和错误信息")  // API描述
-    public Result<String> validateQuestions(@RequestBody List<QuestionImportVo> questions) {
-
-        return Result.error("验证题目数据失败!");
-    }
-    
-    /**
-     * 验证单个题目数据
-     * @param question 题目数据
-     * @param index 题目序号
-     * @return 错误信息，如果为null表示验证通过
-     */
-    private String validateSingleQuestion(QuestionImportVo question, int index) {
-        // 验证基本字段
-        if (question.getTitle() == null || question.getTitle().trim().isEmpty()) {
-            return String.format("第%d题：题目内容不能为空", index);
-        }
-        
-        if (question.getType() == null || question.getType().trim().isEmpty()) {
-            return String.format("第%d题：题目类型不能为空", index);
-        }
-        
-        if (!"CHOICE".equals(question.getType()) && !"JUDGE".equals(question.getType()) && !"TEXT".equals(question.getType())) {
-            return String.format("第%d题：题目类型必须是CHOICE、JUDGE或TEXT", index);
-        }
-        
-        // 验证选择题特有字段
-        if ("CHOICE".equals(question.getType())) {
-            if (question.getChoices() == null || question.getChoices().isEmpty()) {
-                return String.format("第%d题：选择题必须有选项", index);
-            }
-            
-            if (question.getChoices().size() < 2) {
-                return String.format("第%d题：选择题至少需要2个选项", index);
-            }
-            
-            boolean hasCorrectAnswer = question.getChoices().stream()
-                    .anyMatch(choice -> choice.getIsCorrect() != null && choice.getIsCorrect());
-            
-            if (!hasCorrectAnswer) {
-                return String.format("第%d题：选择题必须有正确答案", index);
-            }
-        } else {
-            // 判断题和简答题需要答案
-            if (question.getAnswer() == null || question.getAnswer().trim().isEmpty()) {
-                return String.format("第%d题：%s必须有答案", index, 
-                    "JUDGE".equals(question.getType()) ? "判断题" : "简答题");
-            }
-        }
-        
-        return null; // 验证通过
-    }
 } 
