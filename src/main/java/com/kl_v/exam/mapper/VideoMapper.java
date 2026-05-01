@@ -26,21 +26,20 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param keyword 搜索关键字（可选）
      * @return 视频分页结果
      */
-    @Select("<script>" +
-            "SELECT v.*, vc.name as category_name " +
-            "FROM videos v " +
-            "LEFT JOIN video_categories vc ON v.category_id = vc.id " +
-            "WHERE v.status = 1 " +
-            "<if test='categoryId != null'> AND v.category_id = #{categoryId} </if>" +
-            "<if test='keyword != null and keyword != \"\"'> " +
-            "AND (v.title LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR v.tags LIKE CONCAT('%', #{keyword}, '%')) " +
-            "</if>" +
-            "ORDER BY v.created_at DESC" +
-            "</script>")
-    IPage<Video> getPublishedVideosPage(Page<?> page,
+    IPage<Video> getPublishedVideosPage(Page<Video> page,
+                                        @Param("keyword") String keyword,
                                         @Param("categoryId") Long categoryId,
-                                        @Param("keyword") String keyword);
+                                        @Param("status") Integer status,
+                                        @Param("uploaderType") Integer uploaderType
+    );
+
+    /**
+     * 如果你想保留原来的调用习惯，不修改 Service 层代码，可以新增一个默认实现（Java 8+）
+     * 这样原有的 videoMapper.getPublishedVideosPage(page, keyword, catId) 依然有效
+     */
+    default IPage<Video> getPublishedVideosPage(Page<Video> page, String keyword, Long categoryId) {
+        return getPublishedVideosPage(page, keyword, categoryId, null, null);
+    }// 即使XML没用到，既然接口有也留着
     
     /**
      * 管理端分页查询视频列表（包含分类名称和审核管理员信息）
@@ -50,20 +49,6 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param keyword 搜索关键字（可选）
      * @return 视频分页结果
      */
-    @Select("<script>" +
-            "SELECT v.*, vc.name as category_name, u.real_name as audit_admin_name " +
-            "FROM videos v " +
-            "LEFT JOIN video_categories vc ON v.category_id = vc.id " +
-            "LEFT JOIN users u ON v.audit_admin_id = u.id " +
-            "WHERE 1=1 " +
-            "<if test='status != null'> AND v.status = #{status} </if>" +
-            "<if test='uploaderType != null'> AND v.uploader_type = #{uploaderType} </if>" +
-            "<if test='keyword != null and keyword != \"\"'> " +
-            "AND (v.title LIKE CONCAT('%', #{keyword}, '%') " +
-            "OR v.uploader_name LIKE CONCAT('%', #{keyword}, '%')) " +
-            "</if>" +
-            "ORDER BY v.created_at DESC" +
-            "</script>")
     IPage<Video> getVideosForAdmin(Page<?> page,
                                    @Param("status") Integer status,
                                    @Param("uploaderType") Integer uploaderType,
@@ -74,12 +59,6 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param limit 限制数量
      * @return 热门视频列表
      */
-    @Select("SELECT v.*, vc.name as category_name " +
-            "FROM videos v " +
-            "LEFT JOIN video_categories vc ON v.category_id = vc.id " +
-            "WHERE v.status = 1 " +
-            "ORDER BY v.view_count DESC " +
-            "LIMIT #{limit}")
     List<Video> getPopularVideos(@Param("limit") Integer limit);
     
     /**
@@ -87,26 +66,12 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param limit 限制数量
      * @return 最新视频列表
      */
-    @Select("SELECT v.*, vc.name as category_name " +
-            "FROM videos v " +
-            "LEFT JOIN video_categories vc ON v.category_id = vc.id " +
-            "WHERE v.status = 1 " +
-            "ORDER BY v.created_at DESC " +
-            "LIMIT #{limit}")
     List<Video> getLatestVideos(@Param("limit") Integer limit);
     
     /**
      * 获取视频统计信息
      * @return 统计数据
      */
-    @Select("SELECT " +
-            "COUNT(*) as total_count, " +
-            "COUNT(CASE WHEN status = 0 THEN 1 END) as pending_count, " +
-            "COUNT(CASE WHEN status = 1 THEN 1 END) as published_count, " +
-            "COUNT(CASE WHEN status = 2 THEN 1 END) as rejected_count, " +
-            "COUNT(CASE WHEN uploader_type = 1 THEN 1 END) as user_upload_count, " +
-            "COUNT(CASE WHEN uploader_type = 2 THEN 1 END) as admin_upload_count " +
-            "FROM videos")
     Map<String, Object> getVideoStatistics();
     
     /**

@@ -7,6 +7,7 @@ import com.kl_v.exam.service.VideoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,6 +18,8 @@ import java.util.Map;
  * 管理端视频控制器
  * 处理管理员相关的视频功能
  */
+@Slf4j
+@CrossOrigin
 @RestController
 @RequestMapping("/api/admin/videos")
 @Tag(name = "视频管理(管理端)", description = "管理端视频相关操作，包括视频管理、审核、统计等功能")
@@ -81,7 +84,6 @@ public class VideoAdminController {
         
         // TODO: 从当前登录用户获取管理员ID，这里暂时使用固定值
         Long adminId = 1L;
-        
         Map<String, Object> result = videoService.uploadVideoByAdmin(video, videoFile, coverFile, adminId);
         return Result.success(result);
     }

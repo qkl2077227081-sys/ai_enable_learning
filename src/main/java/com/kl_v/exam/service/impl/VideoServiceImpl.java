@@ -15,6 +15,7 @@ import com.kl_v.exam.service.VideoService;
 import com.kl_v.exam.utils.IpUtils;
 import com.kl_v.exam.service.FileUploadService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import java.util.Map;
  * 提供视频管理的完整业务逻辑实现
  */
 @Service
+@Slf4j
 public class VideoServiceImpl implements VideoService {
 
     @Autowired
@@ -50,7 +52,7 @@ public class VideoServiceImpl implements VideoService {
     @Override
     public IPage<Video> getPublishedVideos(Integer page, Integer size, Long categoryId, String keyword, HttpServletRequest request) {
         Page<Video> pageObj = new Page<>(page, size);
-        IPage<Video> result = videoMapper.getPublishedVideosPage(pageObj, categoryId, keyword);
+        IPage<Video> result = videoMapper.getPublishedVideosPage(pageObj, keyword, categoryId);
         
         // 如果有IP，填充点赞状态
         if (request != null) {
@@ -177,48 +179,58 @@ public class VideoServiceImpl implements VideoService {
         }
     }
 
+    /**
+     * 用户投稿视频
+     * @param video 视频基本信息
+     * @param videoFile 视频文件
+     * @param coverFile 封面文件（可选）
+     * @return 上传结果
+     */
     @Override
     @Transactional
     public Map<String, Object> submitVideo(Video video, MultipartFile videoFile, MultipartFile coverFile) {
         Map<String, Object> result = new HashMap<>();
-        
+
         if (videoFile == null || videoFile.isEmpty()) {
             throw new RuntimeException("视频文件不能为空");
         }
-        
+
         try {
-            // 上传视频文件
-            Map<String, Object> videoUploadResult = null; //todo: 文件上传以后开放即可！
-                    // fileUploadService.uploadFile(videoFile, "videos/original/");
-            video.setFileUrl(videoUploadResult.get("url").toString());
-            video.setFileSize(videoFile.getSize());
-            
-            // 上传封面文件（可选）
-            if (coverFile != null && !coverFile.isEmpty()) {
-                Map<String, Object> coverUploadResult = null; //todo： 文件上传以后开放即可
-                        // fileUploadService.uploadFile(coverFile, "videos/covers/");
-                video.setCoverUrl(coverUploadResult.get("url").toString());
+            // 1. 处理视频文件上传
+            String videoUrl = fileUploadService.uploadFile("videos/original", videoFile);
+            if (videoUrl == null) {
+                throw new RuntimeException("视频上传失败，未获取到访问地址");
             }
-            
-            // 设置用户投稿默认值
+            video.setFileUrl(videoUrl);
+            video.setFileSize(videoFile.getSize());
+
+            // 2. 处理封面文件上传（可选）
+            if (coverFile != null && !coverFile.isEmpty()) {
+                String coverUrl = fileUploadService.uploadFile("videos/covers", coverFile);
+                video.setCoverUrl(coverUrl);
+            }
+
+            // 3. 设置用户投稿默认值
+            // 注意：因为去掉了 userId 参数，uploaderId 应由前端填充在 video 对象中，或在此处从 Security 上下文获取
             video.setUploaderType(Video.UPLOADER_TYPE_USER);
             video.setStatus(Video.STATUS_PENDING); // 待审核
             video.setViewCount(0L);
             video.setLikeCount(0L);
             video.setCreatedAt(LocalDateTime.now());
             video.setUpdatedAt(LocalDateTime.now());
-            
-            // 保存视频信息
+
+            // 4. 保存视频信息至数据库
             videoMapper.insert(video);
-            
+
             result.put("success", true);
             result.put("message", "视频投稿成功，请等待审核");
             result.put("videoId", video.getId());
-            
+
         } catch (Exception e) {
+            log.error("用户投稿失败", e);
             throw new RuntimeException("视频上传失败：" + e.getMessage());
         }
-        
+
         return result;
     }
 
@@ -240,49 +252,53 @@ public class VideoServiceImpl implements VideoService {
     @Transactional
     public Map<String, Object> uploadVideoByAdmin(Video video, MultipartFile videoFile, MultipartFile coverFile, Long adminId) {
         Map<String, Object> result = new HashMap<>();
-        
+
         if (videoFile == null || videoFile.isEmpty()) {
             throw new RuntimeException("视频文件不能为空");
         }
-        
+
         try {
-            // 上传视频文件 todo: 文件上传实现以后开放即可！
-            Map<String, Object> videoUploadResult = null;
-                    //fileUploadService.uploadFile(videoFile, "videos/original/");
-            video.setFileUrl(videoUploadResult.get("url").toString());
-            video.setFileSize(videoFile.getSize());
-            
-            // 上传封面文件（可选）
-            if (coverFile != null && !coverFile.isEmpty()) {
-                Map<String, Object> coverUploadResult = null;
-                       // fileUploadService.uploadFile(coverFile, "videos/covers/");
-                video.setCoverUrl(coverUploadResult.get("url").toString());
+            // 1. 调用 Minio 上传视频
+            // 注意：你的 FileUploadService.uploadFile 返回的是 String (URL)
+            String videoUrl = fileUploadService.uploadFile("videos/original", videoFile);
+            if (videoUrl == null) {
+                throw new RuntimeException("视频上传至服务器失败，未获取到访问地址");
             }
-            
-            // 设置管理员上传默认值
-            video.setUploaderType(Video.UPLOADER_TYPE_ADMIN);
+            video.setFileUrl(videoUrl);
+            video.setFileSize(videoFile.getSize());
+
+            // 2. 上传封面文件（可选）
+            if (coverFile != null && !coverFile.isEmpty()) {
+                String coverUrl = fileUploadService.uploadFile("videos/covers", coverFile);
+                video.setCoverUrl(coverUrl);
+            }
+
+            // 3. 设置管理员上传默认值
+            video.setUploaderType(1); // 假设 1 是管理员
             video.setAdminId(adminId);
-            video.setStatus(Video.STATUS_PUBLISHED); // 管理员上传直接发布
+            video.setStatus(1); // STATUS_PUBLISHED: 已发布
             video.setAuditAdminId(adminId);
             video.setAuditTime(LocalDateTime.now());
             video.setViewCount(0L);
             video.setLikeCount(0L);
             video.setCreatedAt(LocalDateTime.now());
             video.setUpdatedAt(LocalDateTime.now());
-            
-            // 保存视频信息
+
+            // 4. 保存到数据库
             videoMapper.insert(video);
-            
+
             result.put("success", true);
             result.put("message", "视频上传成功");
             result.put("videoId", video.getId());
-            
+
         } catch (Exception e) {
+            // 记录详细日志并抛出
             throw new RuntimeException("视频上传失败：" + e.getMessage());
         }
-        
+
         return result;
     }
+
 
     @Override
     @Transactional

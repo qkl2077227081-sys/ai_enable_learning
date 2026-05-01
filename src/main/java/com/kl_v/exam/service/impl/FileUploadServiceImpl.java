@@ -12,12 +12,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
 
-/**
- * projectName: com.atguigu.exam.service.impl
- *
- * @author: 赵伟风
- * description:
- */
 @Service
 @Slf4j
 public class FileUploadServiceImpl implements FileUploadService {

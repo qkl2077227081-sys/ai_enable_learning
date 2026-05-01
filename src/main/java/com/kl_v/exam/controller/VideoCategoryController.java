@@ -7,6 +7,7 @@ import com.kl_v.exam.service.VideoCategoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,8 @@ import java.util.List;
  * 视频分类控制器
  * 处理视频分类管理相关的HTTP请求
  */
+@Slf4j
+@CrossOrigin
 @RestController
 @RequestMapping("/api/video-categories")
 @Tag(name = "视频分类管理", description = "视频分类相关操作，包括分类的增删改查、树形结构管理等功能")
