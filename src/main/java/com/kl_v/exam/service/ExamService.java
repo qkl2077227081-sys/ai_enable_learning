@@ -2,6 +2,7 @@ package com.kl_v.exam.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.entity.ExamRecord;
+import com.kl_v.exam.vo.ExamRankingVO;
 import com.kl_v.exam.vo.StartExamVo;
 import com.kl_v.exam.vo.SubmitAnswerVo;
 
@@ -40,5 +41,20 @@ public interface ExamService extends IService<ExamRecord> {
      * @return
      */
     ExamRecord gradeExam(Integer examRecordId) throws InterruptedException;
+
+    /**
+     * 删除考试记录
+     * @param id
+     */
+    void customRemoveById(Integer id);
+
+    /**
+     * 查询排行榜功能业务
+     * @param paperId
+     * @param limit
+     * @return
+     */
+    List<ExamRankingVO> customGetRanking(Integer paperId, Integer limit);
+
 }
  

@@ -3,6 +3,7 @@ package com.kl_v.exam.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.entity.ExamRecord;
 import com.kl_v.exam.entity.Paper;
@@ -93,6 +94,9 @@ public class PaperServiceImpl extends ServiceImpl<PaperMapper, Paper> implements
         Paper paper = new Paper();
         //名字 描述 时间
         BeanUtils.copyProperties(paperVo,paper);
+        if (StringUtils.isBlank(paper.getName())) {
+            throw new RuntimeException("试卷名称不可为空");
+        }
         //进行名字的校验
         LambdaQueryWrapper<Paper> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Paper::getName,paper.getName());

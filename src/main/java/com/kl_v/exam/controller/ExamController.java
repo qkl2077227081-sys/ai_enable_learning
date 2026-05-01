@@ -66,9 +66,9 @@ public class ExamController {
     @PostMapping("/{examRecordId}/grade")  // 处理POST请求
     @Operation(summary = "AI自动批阅", description = "使用AI技术自动批阅试卷，特别是简答题的智能评分")  // API描述
     public Result<ExamRecord> gradeExam(
-            @Parameter(description = "考试记录ID") @PathVariable Integer examRecordId) {
-
-        return Result.success(null, "试卷批阅完成");
+            @Parameter(description = "考试记录ID") @PathVariable Integer examRecordId) throws InterruptedException {
+        ExamRecord examRecord = examService.gradeExam(examRecordId);
+        return Result.success(examRecord, "试卷批阅完成");
     }
 
     /**

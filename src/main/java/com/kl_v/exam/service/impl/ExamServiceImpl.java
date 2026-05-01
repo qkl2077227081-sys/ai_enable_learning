@@ -11,6 +11,7 @@ import com.kl_v.exam.service.AnswerRecordService;
 import com.kl_v.exam.service.ExamService;
 import com.kl_v.exam.service.KimiAiService;
 import com.kl_v.exam.service.PaperService;
+import com.kl_v.exam.vo.ExamRankingVO;
 import com.kl_v.exam.vo.GradingResult;
 import com.kl_v.exam.vo.StartExamVo;
 import com.kl_v.exam.vo.SubmitAnswerVo;
@@ -40,6 +41,8 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
     private AnswerRecordService answerRecordService;
     @Autowired
     private KimiAiService kimiAiService;
+    @Autowired
+    private ExamRecordMapper examRecordMapper;
 
     /**
      * 开始考试接口
@@ -248,6 +251,36 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
         examRecord.setStatus("已批阅");
         updateById(examRecord);
         return examRecord;
+    }
+
+    /**
+     * 删除考试记录
+     *
+     * @param id
+     */
+    @Override
+    public void customRemoveById(Integer id) {
+        //重要的关联数据校验，有删除失败！
+        //判断自身状态
+        ExamRecord examRecord = getById(id);
+        if ("进行中".equals(examRecord.getStatus())) {
+            throw new RuntimeException("当前考试正在进行中无法删除");
+        }
+        //删除自身数据，同时删除答题记录
+        removeById(id);
+        answerRecordService.remove(new LambdaQueryWrapper<AnswerRecord>().eq(AnswerRecord::getExamRecordId,id));
+    }
+
+    /**
+     * 查询排行榜功能业务
+     *
+     * @param paperId
+     * @param limit
+     * @return
+     */
+    @Override
+    public List<ExamRankingVO> customGetRanking(Integer paperId, Integer limit) {
+        return examRecordMapper.customQueryRanking(paperId,limit);
     }
 
 
