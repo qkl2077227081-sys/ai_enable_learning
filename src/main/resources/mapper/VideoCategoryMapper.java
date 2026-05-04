@@ -1,4 +1,4 @@
-package com.kl_v.exam.mapper;
+package mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -22,18 +22,12 @@ public interface VideoCategoryMapper extends BaseMapper<VideoCategory> {
      * 获取每个分类的视频数量统计
      * @return 包含分类ID和视频数量的结果列表
      */
-    @Select("SELECT category_id, COUNT(*) as video_count FROM videos WHERE status = 1 GROUP BY category_id")
-    @Results({
-        @Result(property = "categoryId", column = "category_id"),
-        @Result(property = "videoCount", column = "video_count")
-    })
     List<Map<String, Object>> getCategoryVideoCount();
     
     /**
      * 获取所有启用的顶级分类
      * @return 顶级分类列表
      */
-    @Select("SELECT * FROM video_categories WHERE parent_id = 0 AND status = 1 ORDER BY sort_order ASC")
     List<VideoCategory> getTopCategories();
     
     /**
@@ -41,6 +35,5 @@ public interface VideoCategoryMapper extends BaseMapper<VideoCategory> {
      * @param parentId 父级分类ID
      * @return 子分类列表
      */
-    @Select("SELECT * FROM video_categories WHERE parent_id = #{parentId} AND status = 1 ORDER BY sort_order ASC")
     List<VideoCategory> getChildCategories(Long parentId);
 } 

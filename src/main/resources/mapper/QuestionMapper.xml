@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.kl_v.exam.mapper.QuestionMapper">
+<mapper namespace="mapper.QuestionMapper">
     <resultMap id="questionMap" type="com.kl_v.exam.entity.Question">
         <id column="id" property="id" />
         <association property="answer" javaType="com.kl_v.exam.entity.QuestionAnswer">
@@ -12,7 +12,7 @@
             <result column="id" property="questionId" />
         </association>
         <collection property="choices" ofType="com.kl_v.exam.entity.QuestionChoice"
-                    column="id" select="com.kl_v.exam.mapper.QuestionChoiceMapper.selectListByQuestionId" />
+                    column="id" select="mapper.QuestionChoiceMapper.selectListByQuestionId" />
     </resultMap>
     <select id="customPage" resultMap="questionMap">
         select

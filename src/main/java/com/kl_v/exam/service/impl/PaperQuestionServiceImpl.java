@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.entity.PaperQuestion;
 import com.kl_v.exam.mapper.PaperQuestionMapper;
 import com.kl_v.exam.service.PaperQuestionService;
-import com.kl_v.exam.service.PaperService;
 import org.springframework.stereotype.Service;
 
 /**

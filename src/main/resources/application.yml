@@ -42,13 +42,6 @@ minio:
   password: minioadmin
   bucket-name: enen
 
-kimi:
-  api:
-    model: moonshot-v1-32k
-    url: https://api.moonshot.cn/v1/chat/completions
-    api-key: ${KIMI_API_KEY:placeholder}
-    max-tokens: 4096
-    temperature: 0.3
 deepseek:
   api:
     model: deepseek-v4-flash
