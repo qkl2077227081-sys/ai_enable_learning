@@ -1,11 +1,10 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kl_v.exam.entity.VideoLike;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 /**
  * 视频点赞Mapper接口

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="mapper.VideoLikeMapper">
+<mapper namespace="com.kl_v.exam.mapper.VideoLikeMapper">
 
     <select id="isLikedByIp" resultType="java.lang.Boolean">
         SELECT COUNT(*) > 0

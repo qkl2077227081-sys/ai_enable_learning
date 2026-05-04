@@ -2,5 +2,11 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="mapper.NoticeMapper">
+<mapper namespace="com.kl_v.exam.mapper.NoticeMapper">
+    <select id="selectActiveNotices" resultType="com.kl_v.exam.entity.Notice">
+        SELECT * FROM notices WHERE is_active = true ORDER BY priority DESC, create_time DESC
+    </select>
+    <select id="selectLatestNotices" resultType="com.kl_v.exam.entity.Notice">
+        SELECT * FROM notices WHERE is_active = true ORDER BY priority DESC, create_time DESC LIMIT #{limit}
+    </select>
 </mapper>

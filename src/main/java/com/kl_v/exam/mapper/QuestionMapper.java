@@ -1,4 +1,4 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -20,7 +20,6 @@ public interface QuestionMapper extends BaseMapper<Question> {
      * 查询题目中分类的数量
      * @return Map<分类id，题目数量>
      */
-    @Select("select category_id,count(*) ct from questions where is_deleted = 0 GROUP BY category_id")
     List<Map<Long,Long>> selectCategoryCount();
 
     /**

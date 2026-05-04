@@ -1,12 +1,9 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kl_v.exam.entity.VideoCategory;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Result;
-import org.apache.ibatis.annotations.Results;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;
