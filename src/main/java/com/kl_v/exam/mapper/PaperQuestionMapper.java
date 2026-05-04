@@ -1,4 +1,4 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kl_v.exam.entity.PaperQuestion;

@@ -1,4 +1,4 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;

@@ -1,4 +1,4 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.kl_v.exam.entity.Question;
 import com.kl_v.exam.vo.QuestionPageVo;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 import java.util.Map;

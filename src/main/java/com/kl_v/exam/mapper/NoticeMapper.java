@@ -1,9 +1,8 @@
-package mapper;
+package com.kl_v.exam.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kl_v.exam.entity.Notice;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
