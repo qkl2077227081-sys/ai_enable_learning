@@ -14,7 +14,6 @@ import com.kl_v.exam.mapper.PaperMapper;
 import com.kl_v.exam.mapper.QuestionMapper;
 import com.kl_v.exam.service.PaperQuestionService;
 import com.kl_v.exam.service.PaperService;
-import com.kl_v.exam.service.QuestionService;
 import com.kl_v.exam.vo.AiPaperVo;
 import com.kl_v.exam.vo.PaperVo;
 import com.kl_v.exam.vo.RuleVo;

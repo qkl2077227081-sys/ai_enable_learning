@@ -5,7 +5,6 @@ import com.kl_v.exam.entity.ExamRecord;
 import com.kl_v.exam.mapper.*;
 import com.kl_v.exam.service.StatsService;
 import com.kl_v.exam.vo.StatsVo;
-import com.kl_v.exam.mapper.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

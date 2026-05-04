@@ -1,13 +1,19 @@
 package com.kl_v.exam.controller;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.kl_v.exam.common.Result;
+import com.kl_v.exam.service.UserService;
 import com.kl_v.exam.vo.LoginResponseVo;
 import com.kl_v.exam.vo.LoginRequestVo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import com.kl_v.exam.entity.User;
 
 
 /**
@@ -19,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = "*")  // 允许跨域访问
 @Tag(name = "用户管理", description = "用户相关操作，包括登录认证、权限验证等功能")  // Swagger API分组
 public class UserController {
-    
+
 
     /**
      * 用户登录
@@ -31,17 +37,6 @@ public class UserController {
     public Result<LoginResponseVo> login(@RequestBody LoginRequestVo loginRequestVo) {
         return Result.success(null);
     }
-    
-    /**
-     * 检查用户权限
-     * @param userId 用户ID
-     * @return 权限检查结果
-     */
-    @GetMapping("/check-admin/{userId}")  // 处理GET请求
-    @Operation(summary = "检查管理员权限", description = "验证指定用户是否具有管理员权限")  // API描述
-    public Result<Boolean> checkAdmin(
-            @Parameter(description = "用户ID") @PathVariable Long userId) {
 
-        return Result.success(true);
-    }
+
 } 

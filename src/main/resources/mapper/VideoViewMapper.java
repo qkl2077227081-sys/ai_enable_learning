@@ -1,4 +1,4 @@
-package com.kl_v.exam.mapper;
+package mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.kl_v.exam.entity.VideoView;
@@ -21,7 +21,6 @@ public interface VideoViewMapper extends BaseMapper<VideoView> {
      * @param videoId 视频ID
      * @return 观看总数
      */
-    @Select("SELECT COUNT(*) FROM video_views WHERE video_id = #{videoId}")
     Long getViewCountByVideoId(@Param("videoId") Long videoId);
     
     /**
@@ -29,7 +28,6 @@ public interface VideoViewMapper extends BaseMapper<VideoView> {
      * @param videoId 视频ID
      * @return 平均观看时长（秒）
      */
-    @Select("SELECT AVG(view_duration) FROM video_views WHERE video_id = #{videoId} AND view_duration > 0")
     Double getAverageViewDuration(@Param("videoId") Long videoId);
     
     /**
@@ -38,10 +36,5 @@ public interface VideoViewMapper extends BaseMapper<VideoView> {
      * @param days 统计天数
      * @return 观看统计列表
      */
-    @Select("SELECT DATE(created_at) as view_date, COUNT(*) as view_count " +
-            "FROM video_views " +
-            "WHERE video_id = #{videoId} AND created_at >= DATE_SUB(NOW(), INTERVAL #{days} DAY) " +
-            "GROUP BY DATE(created_at) " +
-            "ORDER BY view_date DESC")
     List<Map<String, Object>> getViewStatsByDate(@Param("videoId") Long videoId, @Param("days") Integer days);
 } 

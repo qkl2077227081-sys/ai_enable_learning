@@ -1,4 +1,4 @@
-package com.kl_v.exam.mapper;
+package mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

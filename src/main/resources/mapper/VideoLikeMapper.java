@@ -1,4 +1,4 @@
-package com.kl_v.exam.mapper;
+package mapper;
 
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -20,7 +20,6 @@ public interface VideoLikeMapper extends BaseMapper<VideoLike> {
      * @param userIp 用户IP
      * @return 是否已点赞
      */
-    @Select("SELECT COUNT(*) > 0 FROM video_likes WHERE video_id = #{videoId} AND user_ip = #{userIp}")
     boolean isLikedByIp(@Param("videoId") Long videoId, @Param("userIp") String userIp);
     
     /**
@@ -28,6 +27,5 @@ public interface VideoLikeMapper extends BaseMapper<VideoLike> {
      * @param videoId 视频ID
      * @return 点赞总数
      */
-    @Select("SELECT COUNT(*) FROM video_likes WHERE video_id = #{videoId}")
     Long getLikeCountByVideoId(@Param("videoId") Long videoId);
 } 

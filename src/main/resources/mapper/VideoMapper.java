@@ -1,4 +1,4 @@
-package com.kl_v.exam.mapper;
+package mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -79,7 +79,6 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param videoId 视频ID
      * @return 更新行数
      */
-    @Update("UPDATE videos SET view_count = view_count + 1 WHERE id = #{videoId}")
     int incrementViewCount(@Param("videoId") Long videoId);
     
     /**
@@ -87,7 +86,6 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param videoId 视频ID
      * @return 更新行数
      */
-    @Update("UPDATE videos SET like_count = like_count + 1 WHERE id = #{videoId}")
     int incrementLikeCount(@Param("videoId") Long videoId);
     
     /**
@@ -95,6 +93,5 @@ public interface VideoMapper extends BaseMapper<Video> {
      * @param videoId 视频ID
      * @return 更新行数
      */
-    @Update("UPDATE videos SET like_count = like_count - 1 WHERE id = #{videoId} AND like_count > 0")
     int decrementLikeCount(@Param("videoId") Long videoId);
 } 
