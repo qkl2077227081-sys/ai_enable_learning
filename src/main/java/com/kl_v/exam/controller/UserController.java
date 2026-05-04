@@ -3,6 +3,7 @@ package com.kl_v.exam.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.xiaoymin.knife4j.core.util.StrUtil;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.service.UserService;
 import com.kl_v.exam.vo.LoginResponseVo;
@@ -14,6 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import com.kl_v.exam.entity.User;
+
+import cn.hutool.core.lang.UUID;
+
+
 
 
 /**
@@ -27,15 +32,45 @@ import com.kl_v.exam.entity.User;
 public class UserController {
 
 
+    @Autowired
+    private UserService userService;
     /**
      * 用户登录
      * @param loginRequestVo 登录请求
      * @return 登录结果
      */
-    @PostMapping("/login")  // 处理POST请求
-    @Operation(summary = "用户登录", description = "用户通过用户名和密码进行登录验证，返回用户信息和token")  // API描述
-    public Result<LoginResponseVo> login(@RequestBody LoginRequestVo loginRequestVo) {
-        return Result.success(null);
+    @PostMapping("/login")
+    @Operation(summary = "用户登录", description = "明文比对练习版：校验用户名和密码是否一致")
+    public Result<LoginResponseVo> login(@RequestBody LoginRequestVo loginRequestVo) throws InterruptedException {
+        // 1. 参数基础校验
+        if (loginRequestVo == null || StrUtil.isBlank(loginRequestVo.getUsername())) {
+            return Result.error("用户名不能为空");
+        }
+
+        // 2. 数据库查询用户
+        // 假设你使用的是 MyBatis-Plus，通过 username 查询唯一用户
+        User user = userService.getOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, loginRequestVo.getUsername()));
+
+        // 3. 明文比对 (练习阶段直接使用 == 或 .equals)
+        if (user == null || !user.getPassword().equals(loginRequestVo.getPassword())) {
+            return Result.error("用户名或密码错误");
+        }
+
+        // 4. 状态校验 (对应你前端页面显示的 ACTIVE/DISABLED)
+        if ("DISABLED".equals(user.getStatus())) {
+            return Result.error("该账号已被禁用，请联系管理员");
+        }
+
+        // 5. 组装返回数据
+        LoginResponseVo responseVo = new LoginResponseVo();
+        // 修复第 5 步：使用 Hutool 的 fastUUID 或原生 UUID
+        responseVo.setToken("mock-token-" + cn.hutool.core.lang.UUID.fastUUID().toString());
+        responseVo.setUsername(user.getUsername());
+        responseVo.setRealName(user.getRealName());
+        responseVo.setRole(user.getRole());
+
+        return Result.success(responseVo);
     }
 
 
