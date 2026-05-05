@@ -1,6 +1,11 @@
 package com.kl_v.exam.service.impl;
 
+
+
+
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.User;
@@ -8,6 +13,7 @@ import com.kl_v.exam.service.UserService;
 import com.kl_v.exam.mapper.UserMapper;
 import com.kl_v.exam.vo.LoginRequestVo;
 import com.kl_v.exam.vo.LoginResponseVo;
+import com.kl_v.exam.vo.PageResult;
 import org.springframework.stereotype.Service;
 
 /**
@@ -50,5 +56,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         responseVo.setToken("mock-token-" + cn.hutool.core.lang.UUID.fastUUID().toString());
 
         return Result.success(responseVo);
+    }
+
+    // UserServiceImpl.java 里的确实写法
+    @Override
+    public PageResult<User> pageQuery(Integer pageNum, Integer pageSize, String username) {
+        Page<User> page = new Page<>(pageNum, pageSize);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(StrUtil.isNotBlank(username), User::getUsername, username);
+        wrapper.orderByDesc(User::getCreateTime);
+
+        this.page(page, wrapper);
+
+        // 确实的写法：如果构造方法被标记为冗余，尝试直接赋值或使用全参构造
+        PageResult<User> result = new PageResult<>();
+        result.setRecords(page.getRecords());
+        result.setTotal(page.getTotal());
+        result.setCurrent(page.getCurrent());
+        result.setSize(page.getSize());
+        // pages 会在你类里的逻辑中自动根据 size 和 total 计算
+        return result;
     }
 }

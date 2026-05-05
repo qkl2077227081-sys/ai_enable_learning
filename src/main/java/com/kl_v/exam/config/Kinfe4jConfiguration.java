@@ -42,7 +42,7 @@ public class Kinfe4jConfiguration {
         return GroupedOpenApi.builder()
                 .group("用户信息管理")
                 .pathsToMatch(
-                        "/api/usr/**"
+                        "/api/user/**"
                 ).build();
     }
     //试题信息管理

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.kl_v.exam.common.Result;
 import com.kl_v.exam.entity.User;
 import com.kl_v.exam.vo.LoginRequestVo;
+import com.kl_v.exam.vo.PageResult;
 
 /**
  * 用户Service接口
@@ -19,4 +20,7 @@ public interface UserService extends IService<User> {
      * @return
      */
     Result<Object> login(LoginRequestVo loginRequestVo);
+
+    //分页查询
+    PageResult<User> pageQuery(Integer pageNum, Integer pageSize, String username);
 }
