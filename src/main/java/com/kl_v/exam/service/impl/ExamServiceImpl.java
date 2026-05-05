@@ -266,7 +266,7 @@ public class ExamServiceImpl extends ServiceImpl<ExamRecordMapper, ExamRecord> i
             throw new RuntimeException("当前考试正在进行中无法删除");
         }
         //删除自身数据，同时删除答题记录
-        removeById(id);
+        removeById(Long.valueOf(id));
         answerRecordService.remove(new LambdaQueryWrapper<AnswerRecord>().eq(AnswerRecord::getExamRecordId,id));
     }
 
